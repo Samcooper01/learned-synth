@@ -9,4 +9,6 @@ script (`resyn2`) for every design. This project learns a better transformation
 sequence per design and measures the payoff at technology mapping and, where it
 matters, at post-detailed-route sign-off using OpenROAD.
 
-See [PLAN.md](PLAN.md) for the full project plan.
+See [PLAN.md](PLAN.md) for the full project plan, and
+[docs/default-abc-flow.md](docs/default-abc-flow.md) for a diagrammed walkthrough
+of the default flow and the `resyn2` recipe this project replaces.
