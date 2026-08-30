@@ -13,10 +13,21 @@ on the same footing and measures which does better:
   Neural Network) encoder.** Train one policy across many designs so that, given a
   new design, it emits a good recipe without searching.
 
-FlowTune is a logic-synthesis flow autotuner from the University of Utah
-(https://github.com/Yu-Utah/FlowTune - verify the exact repository). The RL path
-follows the DRiLLS approach (https://github.com/scale-lab/DRiLLS - verify) and the
-OpenABC-D dataset and GNN baselines (https://github.com/NYU-MLDA/OpenABC - verify).
+FlowTune is a logic-synthesis flow autotuner (https://github.com/Yu-Maryland/FlowTune).
+The RL path follows the DRiLLS approach (https://github.com/scale-lab/DRiLLS) and the
+OpenABC-D dataset and GNN baselines (https://github.com/NYU-MLDA/OpenABC).
+
+**What FlowTune gives you natively versus what you integrate.** Searching the
+transformation sequence is FlowTune's whole job (a multi-armed bandit over classic
+ABC commands: `balance`, `rewrite`, `refactor`, `resub`), so you do not build the
+search. Its built-in objectives, however, are ABC-level proxies (AIG node count and
+levels, LUT count and depth), and its only post-place-and-route integration is with
+VTR (Verilog-to-Routing), an FPGA (Field-Programmable Gate Array) flow, not
+OpenROAD. So the integration you add is **wiring your OpenROAD + ASAP7 (Arizona
+State University 7nm predictive Process Design Kit) harness in as FlowTune's custom
+objective**, so the bandit optimizes real ASIC (Application-Specific Integrated
+Circuit) sign-off QoR (Quality of Results) instead of a proxy. That is the same
+harness the RL side uses, so it is not duplicated work.
 
 ## "Better" has two axes, not one
 

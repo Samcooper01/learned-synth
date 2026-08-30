@@ -70,4 +70,7 @@ See [PLAN.md](PLAN.md) for the full project plan,
 of the default flow and the `resyn2` recipe this project replaces, and
 [docs/experiment-pipeline.md](docs/experiment-pipeline.md) for the head-to-head
 experiment (FlowTune search versus an RL (Reinforcement Learning) policy with a
-GNN (Graph Neural Network)) and its training and testing pipelines.
+GNN (Graph Neural Network)) and its training and testing pipelines, and
+[docs/harness-and-sweeps.md](docs/harness-and-sweeps.md) for the concrete harness
+mechanics (recipe injection into the real OpenROAD-flow-scripts ASAP7 flow) and the
+sweeps we launch.

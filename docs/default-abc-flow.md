@@ -1,8 +1,21 @@
 # The default flow and the default ABC (And-Inverter Graph optimizer) recipe
 
-This document walks through what the open synthesis flow does *by default*, so it
-is clear exactly what `learned-synth` is replacing. The thing we learn to beat is
-the fixed `resyn2` recipe shown below.
+This document walks through the classic ABC (And-Inverter Graph optimizer)
+optimization recipe, `resyn2`, which is the command space `learned-synth` searches
+over.
+
+> **Important correction about *this* flow's real default.** The OpenROAD-flow-
+> scripts (ORFS) ASAP7 (Arizona State University 7nm predictive Process Design Kit)
+> flow does *not* run `resyn2` by default. Its default (`abc_speed.script`) is the
+> modern GIA (the scalable And-Inverter Graph engine) `&`-flow, which interleaves
+> optimization and technology mapping (`&dch`, `&syn2`, `&synch2`, `&nf`,
+> `&if -g -K 6`, repeated). This project deliberately works in the *classic* ABC
+> command space instead (`balance`, `rewrite`, `refactor`, `resub`), because that
+> is what FlowTune and DRiLLS use. So `resyn2` below is best read as the **classic
+> reference recipe and baseline** our search space is built around, not as the
+> string ORFS runs out of the box. See
+> [harness-and-sweeps.md](harness-and-sweeps.md) for how a searched classic recipe
+> is injected into the flow.
 
 ## 1. Where synthesis sits in the whole flow
 
@@ -162,8 +175,11 @@ That gap is the opening `learned-synth` aims at.
 
 ## 7. What `learned-synth` changes
 
-The fixed ten-step string above is exactly what we replace. Instead of one recipe
-for every design, we search the space of transformation sequences (their order,
-length, and command choice) and grade candidates on real downstream QoR (Quality
-of Results) rather than on the AIG (And-Inverter Graph) proxy. See
+The fixed ten-step `resyn2` string is one point in the classic-command space, and
+it is our baseline. Instead of one recipe for every design, we search that space
+(the order, length, and choice of classic commands) and grade candidates on real
+downstream QoR (Quality of Results) rather than on the AIG (And-Inverter Graph)
+proxy. The searched optimization sequence is sandwiched between a fixed `strash`
+prologue and a fixed mapping epilogue so the netlist stays valid for OpenROAD. See
+[harness-and-sweeps.md](harness-and-sweeps.md) for the injection mechanism and
 [../PLAN.md](../PLAN.md) for the full ladder from harness to learned policy.
