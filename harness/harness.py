@@ -69,7 +69,10 @@ def run_recipe(
     orfs: str = DEFAULT_ORFS,
     wns_penalty: float = 1.0,
     timeout_s: int = 3600,
+    num_cores: int = 4,
 ) -> Result:
+    """Run one recipe through ORFS. num_cores caps OpenROAD threads per run so we
+    do not crowd out other work on a shared machine (default deliberately low)."""
     os.makedirs(RECIPE_DIR, exist_ok=True)
     script_path = os.path.join(RECIPE_DIR, f"{recipe.variant}.script")
     with open(script_path, "w") as f:
@@ -78,7 +81,8 @@ def run_recipe(
     cmd = (
         f"source {orfs}/env.sh >/dev/null 2>&1 && cd {orfs}/flow && "
         f"make DESIGN_CONFIG=./designs/asap7/{design}/config.mk "
-        f"FLOW_VARIANT={recipe.variant} ABC_SCRIPT={script_path} SYNTH_USE_SYN=0"
+        f"FLOW_VARIANT={recipe.variant} ABC_SCRIPT={script_path} "
+        f"SYNTH_USE_SYN=0 NUM_CORES={num_cores}"
     )
     t0 = time.time()
     proc = subprocess.run(
