@@ -42,34 +42,31 @@ def design_top(design: str, orfs: str = DEFAULT_ORFS) -> str:
     return design
 
 
-def design_nickname(design: str, orfs: str = DEFAULT_ORFS) -> str | None:
-    cfg = os.path.join(orfs, "flow", "designs", "asap7", design, "config.mk")
-    with open(cfg) as f:
-        for line in f:
-            m = re.search(r"DESIGN_NICKNAME\s*=\s*(\S+)", line)
-            if m:
-                return m.group(1)
-    return None
+def _make_var(design: str, var: str, orfs: str) -> str:
+    """Ask ORFS's own make to resolve a design variable (files, incdirs, defines)."""
+    cfg = f"./designs/asap7/{design}/config.mk"
+    proc = subprocess.run(
+        ["make", f"DESIGN_CONFIG={cfg}", f"print-{var}"],
+        cwd=os.path.join(orfs, "flow"), capture_output=True, text=True, timeout=120)
+    out = proc.stdout.strip()
+    # ORFS's print-% target emits "VAR: value ..."; strip the label.
+    if out.startswith(var + ":"):
+        out = out[len(var) + 1:].strip()
+    return out
+
+
+def resolve_design(design: str, orfs: str = DEFAULT_ORFS) -> dict:
+    """Resolved sources, include dirs, and defines for a design, via ORFS make."""
+    return {
+        "top": _make_var(design, "DESIGN_NAME", orfs) or design,
+        "files": _make_var(design, "VERILOG_FILES", orfs).split(),
+        "incdirs": _make_var(design, "VERILOG_INCLUDE_DIRS", orfs).split(),
+        "defines": _make_var(design, "VERILOG_DEFINES", orfs).split(),
+    }
 
 
 def design_sources(design: str, orfs: str = DEFAULT_ORFS) -> list[str]:
-    """Sources live under src/<nickname>, which is not always the design name."""
-    srcroot = os.path.join(orfs, "flow", "designs", "src")
-    candidates = [
-        design_nickname(design, orfs),
-        design,
-        f"{design}_sv",
-        design_top(design, orfs),
-    ]
-    for c in candidates:
-        if not c:
-            continue
-        d = os.path.join(srcroot, c)
-        files = sorted(glob.glob(os.path.join(d, "*.v")))
-        files += sorted(glob.glob(os.path.join(d, "*.sv")))
-        if files:
-            return files
-    return []
+    return resolve_design(design, orfs)["files"]
 
 
 def make_start_aig(design: str, orfs: str = DEFAULT_ORFS) -> str:
@@ -83,16 +80,23 @@ def make_start_aig(design: str, orfs: str = DEFAULT_ORFS) -> str:
     out = os.path.join(AIG_DIR, f"{design}.blif")
     if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
-    top = design_top(design, orfs)
-    files = design_sources(design, orfs)
+    d = resolve_design(design, orfs)
+    top, files = d["top"], d["files"]
     if not files:
         raise FileNotFoundError(f"no Verilog sources found for {design}")
+    incs = " ".join(f"-I{i}" for i in d["incdirs"])
+    defs = " ".join(f"-D{v}" for v in d["defines"])
+    # blackbox any module still undefined after read (e.g. SRAM macros) so
+    # hierarchy does not fail; the combinational logic is what the proxy needs.
     script = (
-        f"read_verilog -sv {' '.join(files)}; "
-        f"hierarchy -top {top}; proc; flatten; "
+        f"read_verilog -sv {incs} {defs} {' '.join(files)}; "
+        f"hierarchy -top {top}; "
+        f"proc; flatten; "
         f"synth -top {top} -flatten; "
-        f"dfflegalize -cell $_DFF_P_ 01 -cell $_DFF_PP0_ 01 -cell $_DFF_PP1_ 01 "
-        f"-cell $_DFF_PN0_ 01 -cell $_DFF_PN1_ 01; "
+        # Lower ALL sequential cells to plain posedge DFFs (init 0/1). ABC's
+        # read_blif only models simple .latch; async-reset/enable cells break it.
+        # async2sync first converts async set/reset so dfflegalize can fold them.
+        f"async2sync; dfflegalize -cell $_DFF_P_ 01; "
         f"write_blif {out}"
     )
     proc = subprocess.run([YOSYS, "-p", script], capture_output=True, text=True,
