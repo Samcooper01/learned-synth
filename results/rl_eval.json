@@ -1,0 +1,122 @@
+[
+  {
+    "design": "gcd",
+    "start_nodes": 389,
+    "proxy": {
+      "resyn2": 357,
+      "rl": 350,
+      "random_best": 349,
+      "rl_vs_resyn2_pct": -1.9607843137254901
+    },
+    "rl_recipe": [
+      "refactor",
+      "rewrite -z",
+      "resub",
+      "refactor",
+      "rewrite -z",
+      "resub",
+      "refactor",
+      "rewrite -z",
+      "resub",
+      "refactor",
+      "rewrite -z",
+      "resub"
+    ],
+    "real": {
+      "resyn2": {
+        "ok": true,
+        "fom": 80.3394,
+        "area": 59.5301,
+        "wns": -20.8093,
+        "power": 0.0012249
+      },
+      "rl": {
+        "ok": true,
+        "fom": 67.74216,
+        "area": 64.1374,
+        "wns": -3.60476,
+        "power": 0.00131588
+      },
+      "random_best": {
+        "ok": true,
+        "fom": 73.4053,
+        "area": 63.2626,
+        "wns": -10.1427,
+        "power": 0.0012113
+      },
+      "rl_vs_resyn2_pct": -15.680027483401668
+    }
+  },
+  {
+    "design": "uart",
+    "start_nodes": 753,
+    "proxy": {
+      "resyn2": 700,
+      "rl": 687,
+      "random_best": 669,
+      "rl_vs_resyn2_pct": -1.8571428571428572
+    },
+    "rl_recipe": [
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub"
+    ],
+    "real": {
+      "resyn2": {
+        "ok": true,
+        "fom": 139.2164,
+        "area": 115.138,
+        "wns": -24.0784,
+        "power": 0.00267258
+      },
+      "rl": {
+        "ok": true,
+        "fom": 141.8058,
+        "area": 109.569,
+        "wns": -32.2368,
+        "power": 0.00258331
+      },
+      "random_best": {
+        "ok": true,
+        "fom": 151.082,
+        "area": 112.281,
+        "wns": -38.801,
+        "power": 0.00256374
+      },
+      "rl_vs_resyn2_pct": 1.8599820136133474
+    }
+  },
+  {
+    "design": "aes",
+    "start_nodes": 17762,
+    "proxy": {
+      "resyn2": 17289,
+      "rl": 16936,
+      "random_best": 16921,
+      "rl_vs_resyn2_pct": -2.041760657065186
+    },
+    "rl_recipe": [
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "resub"
+    ]
+  }
+]
