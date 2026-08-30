@@ -79,15 +79,17 @@ def main():
     gnn_path = os.path.join(RESULTS, "gnn_results.json")
     if os.path.exists(gnn_path):
         g = json.load(open(gnn_path))
+        unit = g.get("unit", "log10(nodes)")
+        bname = g.get("baseline_name", "baseline")
+        tgt = g.get("target", "after")
         lines += ["## GNN (Graph Neural Network) QoR surrogate", "",
-                  "Predicts log10(node count after resyn2) of an AIG (And-Inverter "
-                  "Graph) state from its graph structure. Baseline is a size-only "
-                  "linear fit. Lower MAE (mean absolute error, in log10 units) is "
-                  "better.", "",
+                  f"Predicts the '{tgt}' target of an AIG (And-Inverter Graph) state "
+                  f"from its graph structure. Baseline is the {bname}. Lower MAE "
+                  f"(mean absolute error, in {unit}) is better.", "",
                   f"- Trained on {g['n_train']} graph states; held-out design: "
                   f"{g['holdout']}.",
                   "",
-                  "| split | GNN MAE | size-baseline MAE |",
+                  f"| split | GNN MAE | {bname} MAE |",
                   "|---|---|---|",
                   f"| in-distribution val | {g['gnn_val']:.4f} | {g['baseline_val']:.4f} |",
                   f"| held-out {g['holdout']} | {g['gnn_holdout']:.4f} | {g['baseline_holdout']:.4f} |",

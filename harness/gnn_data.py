@@ -23,8 +23,22 @@ import recipes as rc
 OUT = os.path.join(os.path.dirname(__file__), "..", "models", "gnn_dataset.pkl")
 
 
-def gen_for_design(design: str, n: int, rng: random.Random):
-    blif = aig.make_start_aig(design)
+# size sweep per microbenchmark type (same structure, different scale)
+MICRO_SIZES = {"mult": [10, 14, 18], "addchain": [12, 18, 24],
+               "muxtree": [5, 6, 7], "decoder": [7, 8, 9],
+               "xortree": [24, 36, 48], "cmptree": [12, 18, 24],
+               "crossbar": [8, 12, 16], "lfsr": [32, 48, 64]}
+
+
+def gen_for_design(design: str, n: int, rng: random.Random,
+                   source: str = "orfs", preopt: str = "synth",
+                   size: int | None = None):
+    if source == "micro":
+        blif = aig.make_micro_aig(design, preopt=preopt, size=size)
+        design_id = design if size is None else f"{design}_{size}"
+    else:
+        blif = aig.make_start_aig(design, preopt=preopt)
+        design_id = design
     samples = []
     for _ in range(n):
         plen = rng.randint(0, 10)
@@ -38,7 +52,8 @@ def gen_for_design(design: str, n: int, rng: random.Random):
         if after is None or cur_and <= 0:
             continue
         samples.append({
-            "design": design,
+            "design": design_id,
+            "type": design,
             "node_type": g["node_type"],
             "edge_index": g["edge_index"],
             "cur_and": cur_and,
@@ -52,6 +67,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--designs", nargs="+",
                     default=["gcd", "uart", "aes", "ethmac", "jpeg"])
+    ap.add_argument("--source", choices=["orfs", "micro"], default="orfs")
+    ap.add_argument("--preopt", choices=["synth", "min"], default="synth")
+    ap.add_argument("--sized", action="store_true",
+                    help="micro: sweep each type over MICRO_SIZES (size variants)")
     ap.add_argument("--per-design", type=int, default=150)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=OUT)
@@ -60,9 +79,12 @@ if __name__ == "__main__":
     rng = random.Random(args.seed)
     all_samples = []
     for d in args.designs:
-        s = gen_for_design(d, args.per_design, rng)
-        print(f"{d}: {len(s)} samples", flush=True)
-        all_samples += s
+        sizes = MICRO_SIZES[d] if (args.sized and args.source == "micro") else [None]
+        for sz in sizes:
+            s = gen_for_design(d, args.per_design, rng, args.source, args.preopt, sz)
+            tag = d if sz is None else f"{d}_{sz}"
+            print(f"{tag}: {len(s)} samples", flush=True)
+            all_samples += s
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "wb") as f:
         pickle.dump(all_samples, f)

@@ -25,7 +25,16 @@ from torch_geometric.nn import SAGEConv, global_mean_pool
 N_TYPES = 4  # const, PI, latch, AND
 
 
-def to_data(s) -> Data:
+def target_value(s, kind: str) -> float:
+    """after = log10(nodes after resyn2). reduction = size-invariant fraction of
+    nodes resyn2 removes from this state (structure-driven, size cannot predict)."""
+    if kind == "reduction":
+        after = 10 ** s["y"]
+        return (s["cur_and"] - after) / max(s["cur_and"], 1)
+    return s["y"]
+
+
+def to_data(s, target: str = "after") -> Data:
     ntype = torch.tensor(s["node_type"])
     x_type = torch.nn.functional.one_hot(ntype, N_TYPES).float()
     ei = torch.tensor(s["edge_index"], dtype=torch.long)
@@ -37,7 +46,7 @@ def to_data(s) -> Data:
     x = torch.cat([x_type, torch.log1p(indeg).unsqueeze(1),
                    torch.log1p(outdeg).unsqueeze(1)], dim=1)
     d = Data(x=x, edge_index=ei)
-    d.y = torch.tensor([s["y"]], dtype=torch.float)
+    d.y = torch.tensor([target_value(s, target)], dtype=torch.float)
     d.log_cur = torch.tensor([s["log_cur"]], dtype=torch.float)
     d.design = s["design"]
     return d
@@ -88,7 +97,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=os.path.join(os.path.dirname(__file__),
                     "..", "models", "gnn_dataset.pkl"))
-    ap.add_argument("--holdout", default="jpeg", help="design held out entirely")
+    ap.add_argument("--holdout", nargs="+", default=["jpeg"],
+                    help="design id(s) held out entirely")
+    ap.add_argument("--target", choices=["after", "reduction"], default="after")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
@@ -97,17 +108,21 @@ def main():
     rng = np.random.default_rng(args.seed)
     samples = pickle.load(open(args.data, "rb"))
 
-    heldout = [s for s in samples if s["design"] == args.holdout]
-    pool = [s for s in samples if s["design"] != args.holdout]
+    hset = set(args.holdout)
+    heldout = [s for s in samples if s["design"] in hset]
+    pool = [s for s in samples if s["design"] not in hset]
     rng.shuffle(pool)
     n_val = max(1, len(pool) // 5)
     val, train = pool[:n_val], pool[n_val:]
-    print(f"train={len(train)} val={len(val)} heldout({args.holdout})={len(heldout)}")
+    holdout_label = ",".join(args.holdout) if len(args.holdout) <= 3 else \
+        f"{len(args.holdout)} designs"
+    print(f"train={len(train)} val={len(val)} heldout({holdout_label})={len(heldout)}")
 
     device = "cpu"
-    tr_loader = DataLoader([to_data(s) for s in train], batch_size=16, shuffle=True)
-    va_loader = DataLoader([to_data(s) for s in val], batch_size=32)
-    ho_loader = DataLoader([to_data(s) for s in heldout], batch_size=32)
+    tgt = args.target
+    tr_loader = DataLoader([to_data(s, tgt) for s in train], batch_size=16, shuffle=True)
+    va_loader = DataLoader([to_data(s, tgt) for s in val], batch_size=32)
+    ho_loader = DataLoader([to_data(s, tgt) for s in heldout], batch_size=32)
 
     model = GNNSurrogate(in_dim=N_TYPES + 2).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -126,21 +141,31 @@ def main():
     hp, hy = evaluate(model, ho_loader, device)
     gnn_val, gnn_ho = mae(vp, vy), mae(hp, hy)
 
-    # size-only baseline
-    base = baseline_fit(train)
-    b_val = mae([base(s["log_cur"]) for s in val], [s["y"] for s in val])
-    b_ho = mae([base(s["log_cur"]) for s in heldout], [s["y"] for s in heldout])
+    # baseline: for 'after' a size-only linear fit; for 'reduction' the train mean
+    # (size is uninformative for a size-invariant target, so mean is the bar).
+    ytr = [target_value(s, tgt) for s in train]
+    if tgt == "reduction":
+        mean_y = float(np.mean(ytr))
+        b_val = mae([mean_y] * len(val), [target_value(s, tgt) for s in val])
+        b_ho = mae([mean_y] * len(heldout), [target_value(s, tgt) for s in heldout])
+        base_name, unit = "mean-baseline", "reduction-fraction"
+    else:
+        base = baseline_fit(train)
+        b_val = mae([base(s["log_cur"]) for s in val], ytr[:0] + [target_value(s, tgt) for s in val])
+        b_ho = mae([base(s["log_cur"]) for s in heldout], [target_value(s, tgt) for s in heldout])
+        base_name, unit = "size-baseline", "log10(nodes)"
 
-    print(f"\nMAE in log10(nodes) space (lower is better):")
-    print(f"  in-distribution val: GNN={gnn_val:.4f}  size-baseline={b_val:.4f}")
-    print(f"  held-out {args.holdout}: GNN={gnn_ho:.4f}  size-baseline={b_ho:.4f}")
+    print(f"\ntarget={tgt}  MAE in {unit} (lower is better):")
+    print(f"  in-distribution val: GNN={gnn_val:.4f}  {base_name}={b_val:.4f}")
+    print(f"  held-out ({holdout_label}): GNN={gnn_ho:.4f}  {base_name}={b_ho:.4f}")
 
     os.makedirs(os.path.join(os.path.dirname(__file__), "..", "models"), exist_ok=True)
     torch.save(model.state_dict(), os.path.join(os.path.dirname(__file__), "..",
                "models", "gnn_surrogate.pt"))
     results = {"gnn_val": gnn_val, "gnn_holdout": gnn_ho,
                "baseline_val": b_val, "baseline_holdout": b_ho,
-               "holdout": args.holdout, "n_train": len(train)}
+               "holdout": holdout_label, "n_train": len(train),
+               "target": tgt, "unit": unit, "baseline_name": base_name}
     import json
     with open(os.path.join(os.path.dirname(__file__), "..", "results",
               "gnn_results.json"), "w") as f:

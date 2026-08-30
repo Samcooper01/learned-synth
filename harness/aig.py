@@ -73,7 +73,7 @@ MICRO_DIR = os.path.join(os.path.dirname(__file__), "microbench")
 
 
 def _build_aig(name: str, files: list[str], top: str, incdirs, defines,
-               preopt: str) -> str:
+               preopt: str, chparam: str = "") -> str:
     """Emit a BLIF starting network. preopt='min' keeps redundancy (headroom for
     recipes); preopt='synth' runs full Yosys synthesis first."""
     os.makedirs(AIG_DIR, exist_ok=True)
@@ -94,6 +94,7 @@ def _build_aig(name: str, files: list[str], top: str, incdirs, defines,
     # all sequential cells to plain posedge DFFs. aigmap gives a pure AIG.
     script = (
         f"read_verilog -sv {incs} {defs} {' '.join(files)}; "
+        f"{chparam}"
         f"hierarchy -top {top}; proc; flatten; "
         f"{core}"
         f"async2sync; dfflegalize -cell $_DFF_P_ 01; aigmap; "
@@ -112,10 +113,24 @@ def make_start_aig(design: str, orfs: str = DEFAULT_ORFS, preopt: str = "synth")
     return _build_aig(design, d["files"], d["top"], d["incdirs"], d["defines"], preopt)
 
 
-def make_micro_aig(name: str, preopt: str = "min") -> str:
-    """Starting BLIF for a synthetic microbenchmark in harness/microbench/."""
+# the size parameter to sweep for each microbenchmark type
+MICRO_PARAM = {"mult": "W", "addchain": "N", "muxtree": "SEL", "decoder": "SEL",
+               "xortree": "N", "cmptree": "N", "crossbar": "N", "lfsr": "W"}
+
+
+def make_micro_aig(name: str, preopt: str = "min", size: int | None = None) -> str:
+    """Starting BLIF for a synthetic microbenchmark, optionally at a given size.
+
+    A sized variant (e.g. mult at W=14) is a distinct design of the SAME structure
+    type, which lets us test whether the GNN generalizes across size within a type.
+    """
     f = os.path.join(MICRO_DIR, f"{name}.v")
-    return _build_aig(name, [f], name, [], [], preopt)
+    chparam = ""
+    tag = name
+    if size is not None:
+        chparam = f"chparam -set {MICRO_PARAM[name]} {size} {name}; "
+        tag = f"{name}_{size}"
+    return _build_aig(tag, [f], name, [], [], preopt, chparam)
 
 
 def proxy_eval(aig_path: str, steps, timeout_s: int = 60) -> tuple[int, int] | None:
