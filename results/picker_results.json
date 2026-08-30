@@ -1,0 +1,162 @@
+[
+  {
+    "design": "mult_18",
+    "start": 2655,
+    "resyn2": 2596,
+    "greedy_immediate": 2595,
+    "gnn_lookahead": 2604,
+    "gnn_vs_resyn2_pct": 0.3081664098613251,
+    "gnn_recipe": [
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite"
+    ]
+  },
+  {
+    "design": "addchain_24",
+    "start": 3803,
+    "resyn2": 2847,
+    "greedy_immediate": 2714,
+    "gnn_lookahead": 3130,
+    "gnn_vs_resyn2_pct": 9.940288022479804,
+    "gnn_recipe": [
+      "rewrite",
+      "rewrite",
+      "refactor",
+      "refactor",
+      "refactor",
+      "refactor",
+      "refactor",
+      "refactor",
+      "refactor",
+      "refactor"
+    ]
+  },
+  {
+    "design": "decoder_9",
+    "start": 1532,
+    "resyn2": 1022,
+    "greedy_immediate": 1022,
+    "gnn_lookahead": 1532,
+    "gnn_vs_resyn2_pct": 49.90215264187867,
+    "gnn_recipe": [
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite"
+    ]
+  },
+  {
+    "design": "cmptree_24",
+    "start": 3348,
+    "resyn2": 3090,
+    "greedy_immediate": 3055,
+    "gnn_lookahead": 3056,
+    "gnn_vs_resyn2_pct": -1.1003236245954693,
+    "gnn_recipe": [
+      "rewrite -z",
+      "rewrite -z",
+      "rewrite",
+      "rewrite -z",
+      "rewrite -z",
+      "resub",
+      "rewrite -z",
+      "rewrite -z",
+      "resub",
+      "rewrite"
+    ]
+  },
+  {
+    "design": "lfsr_64",
+    "start": 137,
+    "resyn2": 73,
+    "greedy_immediate": 73,
+    "gnn_lookahead": 136,
+    "gnn_vs_resyn2_pct": 86.3013698630137,
+    "gnn_recipe": [
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite",
+      "rewrite"
+    ]
+  },
+  {
+    "design": "muxtree_7",
+    "start": 6096,
+    "resyn2": 6096,
+    "greedy_immediate": 6096,
+    "gnn_lookahead": 6096,
+    "gnn_vs_resyn2_pct": 0.0,
+    "gnn_recipe": [
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance"
+    ]
+  },
+  {
+    "design": "crossbar_16",
+    "start": 5760,
+    "resyn2": 5760,
+    "greedy_immediate": 5760,
+    "gnn_lookahead": 5760,
+    "gnn_vs_resyn2_pct": 0.0,
+    "gnn_recipe": [
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance"
+    ]
+  },
+  {
+    "design": "xortree_48",
+    "start": 4512,
+    "resyn2": 4512,
+    "greedy_immediate": 4512,
+    "gnn_lookahead": 4512,
+    "gnn_vs_resyn2_pct": 0.0,
+    "gnn_recipe": [
+      "rewrite -z",
+      "rewrite -z",
+      "rewrite -z",
+      "rewrite -z",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance",
+      "balance"
+    ]
+  }
+]
