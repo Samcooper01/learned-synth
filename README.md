@@ -65,6 +65,9 @@ one node, swap in a better implementation, and move on. So there are two scales:
 the design-level fan-in cone (all of which ABC ingests at once), and the small
 local cut the recipe edits during optimization.
 
-See [PLAN.md](PLAN.md) for the full project plan, and
+See [PLAN.md](PLAN.md) for the full project plan,
 [docs/default-abc-flow.md](docs/default-abc-flow.md) for a diagrammed walkthrough
-of the default flow and the `resyn2` recipe this project replaces.
+of the default flow and the `resyn2` recipe this project replaces, and
+[docs/experiment-pipeline.md](docs/experiment-pipeline.md) for the head-to-head
+experiment (FlowTune search versus an RL (Reinforcement Learning) policy with a
+GNN (Graph Neural Network)) and its training and testing pipelines.
