@@ -69,41 +69,53 @@ def design_sources(design: str, orfs: str = DEFAULT_ORFS) -> list[str]:
     return resolve_design(design, orfs)["files"]
 
 
-def make_start_aig(design: str, orfs: str = DEFAULT_ORFS) -> str:
-    """Emit a fixed starting network (BLIF) for a design; returns its path.
+MICRO_DIR = os.path.join(os.path.dirname(__file__), "microbench")
 
-    Cached on disk. BLIF (Berkeley Logic Interchange Format), not AIGER, because
-    AIGER's backend rejects enable flip-flops; dfflegalize lowers all sequential
-    cells to plain posedge DFFs first.
-    """
+
+def _build_aig(name: str, files: list[str], top: str, incdirs, defines,
+               preopt: str) -> str:
+    """Emit a BLIF starting network. preopt='min' keeps redundancy (headroom for
+    recipes); preopt='synth' runs full Yosys synthesis first."""
     os.makedirs(AIG_DIR, exist_ok=True)
-    out = os.path.join(AIG_DIR, f"{design}.blif")
+    out = os.path.join(AIG_DIR, f"{name}_{preopt}.blif")
     if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
-    d = resolve_design(design, orfs)
-    top, files = d["top"], d["files"]
     if not files:
-        raise FileNotFoundError(f"no Verilog sources found for {design}")
-    incs = " ".join(f"-I{i}" for i in d["incdirs"])
-    defs = " ".join(f"-D{v}" for v in d["defines"])
-    # blackbox any module still undefined after read (e.g. SRAM macros) so
-    # hierarchy does not fail; the combinational logic is what the proxy needs.
+        raise FileNotFoundError(f"no Verilog sources for {name}")
+    incs = " ".join(f"-I{i}" for i in incdirs)
+    defs = " ".join(f"-D{v}" for v in defines)
+    if preopt == "synth":
+        core = f"synth -top {top} -flatten; "
+    else:
+        # minimal: to bit-level gates without the optimization passes, so recipes
+        # have real room to differ.
+        core = f"proc; flatten; techmap; "
+    # ABC's read_blif only models simple .latch; async2sync + dfflegalize lower
+    # all sequential cells to plain posedge DFFs. aigmap gives a pure AIG.
     script = (
         f"read_verilog -sv {incs} {defs} {' '.join(files)}; "
-        f"hierarchy -top {top}; "
-        f"proc; flatten; "
-        f"synth -top {top} -flatten; "
-        # Lower ALL sequential cells to plain posedge DFFs (init 0/1). ABC's
-        # read_blif only models simple .latch; async-reset/enable cells break it.
-        # async2sync first converts async set/reset so dfflegalize can fold them.
-        f"async2sync; dfflegalize -cell $_DFF_P_ 01; "
+        f"hierarchy -top {top}; proc; flatten; "
+        f"{core}"
+        f"async2sync; dfflegalize -cell $_DFF_P_ 01; aigmap; "
         f"write_blif {out}"
     )
     proc = subprocess.run([YOSYS, "-p", script], capture_output=True, text=True,
                           timeout=600)
     if not os.path.exists(out) or os.path.getsize(out) == 0:
-        raise RuntimeError(f"yosys failed to emit BLIF for {design}:\n{proc.stderr[-2000:]}")
+        raise RuntimeError(f"yosys failed to emit BLIF for {name}:\n{proc.stderr[-2000:]}")
     return out
+
+
+def make_start_aig(design: str, orfs: str = DEFAULT_ORFS, preopt: str = "synth") -> str:
+    """Starting BLIF for an ORFS design (cached, keyed by preopt level)."""
+    d = resolve_design(design, orfs)
+    return _build_aig(design, d["files"], d["top"], d["incdirs"], d["defines"], preopt)
+
+
+def make_micro_aig(name: str, preopt: str = "min") -> str:
+    """Starting BLIF for a synthetic microbenchmark in harness/microbench/."""
+    f = os.path.join(MICRO_DIR, f"{name}.v")
+    return _build_aig(name, [f], name, [], [], preopt)
 
 
 def proxy_eval(aig_path: str, steps, timeout_s: int = 60) -> tuple[int, int] | None:
