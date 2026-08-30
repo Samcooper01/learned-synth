@@ -1,0 +1,5 @@
+# Large generated artifacts (regenerate with harness/gnn_data.py)
+models/gnn_dataset.pkl
+*.pkl
+__pycache__/
+*.pyc

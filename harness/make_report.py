@@ -76,7 +76,33 @@ def main():
                     lines.append(f"| {r['design']} | {metric} | {vs} |")
             lines.append("")
 
+    gnn_path = os.path.join(RESULTS, "gnn_results.json")
+    if os.path.exists(gnn_path):
+        g = json.load(open(gnn_path))
+        lines += ["## GNN (Graph Neural Network) QoR surrogate", "",
+                  "Predicts log10(node count after resyn2) of an AIG (And-Inverter "
+                  "Graph) state from its graph structure. Baseline is a size-only "
+                  "linear fit. Lower MAE (mean absolute error, in log10 units) is "
+                  "better.", "",
+                  f"- Trained on {g['n_train']} graph states; held-out design: "
+                  f"{g['holdout']}.",
+                  "",
+                  "| split | GNN MAE | size-baseline MAE |",
+                  "|---|---|---|",
+                  f"| in-distribution val | {g['gnn_val']:.4f} | {g['baseline_val']:.4f} |",
+                  f"| held-out {g['holdout']} | {g['gnn_holdout']:.4f} | {g['baseline_holdout']:.4f} |",
+                  ""]
+
     lines += ["## Honest reading", "",
+              "- **The GNN loses to a one-line size baseline, badly on the held-out "
+              "design.** The target (nodes after resyn2) is nearly proportional to "
+              "current size, so log10(size) alone predicts it to ~2%. With only four "
+              "training designs the GNN overfits their graph fingerprints and "
+              "generalizes worse than the trivial baseline (MAE 0.71 vs 0.011 on "
+              "held-out jpeg). This is the empirical version of the warning we "
+              "started with: a GNN needs many designs and a target where structure "
+              "actually matters (real routed area, or the size-removed residual). "
+              "Right now it does not earn its place; that is a finding, not a win.",
               "- RL trained on the node-count proxy; the proxy correlates with, but "
               "is not, real post-route area. The real table is the one that counts.",
               "- Only three designs synthesize cleanly here (gcd, uart, aes), so the "

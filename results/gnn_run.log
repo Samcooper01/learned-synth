@@ -1,0 +1,15 @@
+[00:28:47] generating GNN dataset (5 designs x 150 states)
+gcd: 150 samples
+uart: 150 samples
+aes: 150 samples
+ethmac: 150 samples
+jpeg: 150 samples
+wrote 750 samples -> /home/sam/learned-synth/harness/../models/gnn_dataset.pkl
+[01:00:16] training GNN surrogate (holdout=jpeg)
+train=480 val=120 heldout(jpeg)=150
+
+MAE in log10(nodes) space (lower is better):
+  in-distribution val: GNN=0.0242  size-baseline=0.0076
+  held-out jpeg: GNN=0.7142  size-baseline=0.0110
+saved model and results/gnn_results.json
+[01:16:11] GNN done

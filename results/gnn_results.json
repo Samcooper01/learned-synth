@@ -1,0 +1,8 @@
+{
+  "gnn_val": 0.024170452356338502,
+  "gnn_holdout": 0.7142461617787679,
+  "baseline_val": 0.007576695688109088,
+  "baseline_holdout": 0.011000950101116142,
+  "holdout": "jpeg",
+  "n_train": 480
+}
