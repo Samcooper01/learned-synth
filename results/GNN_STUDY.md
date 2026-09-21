@@ -1,3 +1,5 @@
+> **Prior work (proxy-metric era).** GNN (Graph Neural Network) surrogate on the ABC node-count proxy. The current real-QoR predictor result is in [PREDICTOR.md](PREDICTOR.md). Kept for provenance.
+
 # GNN (Graph Neural Network) surrogate: when does it earn its place?
 
 ## Question

@@ -1,10 +1,10 @@
 {
-  "gnn_val": 0.006312132773330449,
-  "gnn_holdout": 0.13051757852876714,
-  "baseline_val": 0.05852626702038767,
-  "baseline_holdout": 0.020900429442096278,
-  "holdout": "cmptree_12,cmptree_18,cmptree_24",
-  "n_train": 1680,
+  "gnn_val": 0.010020576644819791,
+  "gnn_holdout": 0.012788182703661721,
+  "baseline_val": 0.05008855357748934,
+  "baseline_holdout": 0.053189738229149276,
+  "holdout": "8 designs",
+  "n_train": 512,
   "target": "reduction",
   "unit": "reduction-fraction",
   "baseline_name": "mean-baseline"

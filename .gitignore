@@ -3,3 +3,8 @@ models/gnn_dataset.pkl
 *.pkl
 __pycache__/
 *.pyc
+
+# Run logs, scratch recipe scripts, and pre-clean archives
+*.log
+harness/*.script
+results/archive_preclean/

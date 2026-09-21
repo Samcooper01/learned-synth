@@ -1,0 +1,230 @@
+{
+  "aes": {
+    "design": "aes",
+    "shipped_period": 380,
+    "calibrated_period": 388,
+    "wns_at_calibrated": 1.31051,
+    "area_at_calibrated": 1618.51,
+    "converged": true,
+    "iters": 1,
+    "history": [
+      {
+        "period": 388,
+        "wns": 1.31051,
+        "area": 1618.51,
+        "ok": true
+      }
+    ],
+    "wall_period": 388,
+    "wall_wns": 1.31051
+  },
+  "ethmac": {
+    "design": "ethmac",
+    "shipped_period": 1000,
+    "calibrated_period": 1320,
+    "wns_at_calibrated": 3.91201,
+    "area_at_calibrated": 8130.64,
+    "converged": true,
+    "mode": "scale_all",
+    "iters": 1,
+    "history": [
+      {
+        "period": 1320,
+        "wns": 3.91201,
+        "area": 8130.64,
+        "ok": true
+      }
+    ],
+    "wall_period": 1320,
+    "wall_wns": 3.91201
+  },
+  "gcd": {
+    "design": "gcd",
+    "shipped_period": 310,
+    "calibrated_period": 332,
+    "wns_at_calibrated": 2.45898,
+    "area_at_calibrated": 58.1013,
+    "converged": true,
+    "iters": 1,
+    "history": [
+      {
+        "period": 332,
+        "wns": 2.45898,
+        "area": 58.1013,
+        "ok": true
+      }
+    ],
+    "wall_period": 332,
+    "wall_wns": 2.45898
+  },
+  "ibex": {
+    "design": "ibex",
+    "shipped_period": 1000,
+    "calibrated_period": 993,
+    "wns_at_calibrated": 6.49303,
+    "area_at_calibrated": 2404.61,
+    "converged": true,
+    "iters": 1,
+    "history": [
+      {
+        "period": 993,
+        "wns": 6.49303,
+        "area": 2404.61,
+        "ok": true
+      }
+    ],
+    "wall_period": 993,
+    "wall_wns": 6.49303
+  },
+  "jpeg": {
+    "design": "jpeg",
+    "shipped_period": 680,
+    "calibrated_period": 587,
+    "wns_at_calibrated": 17.4409,
+    "area_at_calibrated": 6757.6,
+    "converged": true,
+    "iters": 4,
+    "history": [
+      {
+        "period": 645,
+        "wns": 19.3246,
+        "area": 6678.94,
+        "ok": true
+      },
+      {
+        "period": 628,
+        "wns": 25.3632,
+        "area": 6692.16,
+        "ok": true
+      },
+      {
+        "period": 605,
+        "wns": 20.2686,
+        "area": 6729.24,
+        "ok": true
+      },
+      {
+        "period": 587,
+        "wns": 17.4409,
+        "area": 6757.6,
+        "ok": true
+      }
+    ],
+    "wall_period": 587,
+    "wall_wns": 17.4409
+  },
+  "mock-alu": {
+    "design": "mock-alu",
+    "shipped_period": 300,
+    "calibrated_period": 1100,
+    "wns_at_calibrated": 2.46772,
+    "area_at_calibrated": 1541.88,
+    "converged": true,
+    "mode": "absolute",
+    "iters": 1,
+    "history": [
+      {
+        "period": 1100,
+        "wns": 2.46772,
+        "area": 1541.88,
+        "ok": true
+      }
+    ],
+    "wall_period": 1100,
+    "wall_wns": 2.46772
+  },
+  "mock-cpu": {
+    "design": "mock-cpu",
+    "shipped_period": 333,
+    "calibrated_period": 273,
+    "wns_at_calibrated": 4.1131,
+    "area_at_calibrated": 7013.83,
+    "converged": true,
+    "iters": 4,
+    "history": [
+      {
+        "period": 318,
+        "wns": 16.8016,
+        "area": 7008.39,
+        "ok": true
+      },
+      {
+        "period": 302,
+        "wns": 17.7877,
+        "area": 7001.99,
+        "ok": true
+      },
+      {
+        "period": 285,
+        "wns": 13.37,
+        "area": 7003.93,
+        "ok": true
+      },
+      {
+        "period": 273,
+        "wns": 4.1131,
+        "area": 7013.83,
+        "ok": true
+      }
+    ],
+    "wall_period": 273,
+    "wall_wns": 4.1131
+  },
+  "riscv32i": {
+    "design": "riscv32i",
+    "shipped_period": 950,
+    "calibrated_period": 1138,
+    "wns_at_calibrated": -3.88567,
+    "area_at_calibrated": 2606.76,
+    "converged": false,
+    "mode": "absolute",
+    "iters": 4,
+    "history": [
+      {
+        "period": 1100,
+        "wns": -15.9597,
+        "area": 2611.32,
+        "ok": true
+      },
+      {
+        "period": 1138,
+        "wns": -3.88567,
+        "area": 2606.76,
+        "ok": true
+      },
+      {
+        "period": 1165,
+        "wns": -16.8396,
+        "area": 2605.74,
+        "ok": true
+      },
+      {
+        "period": 1205,
+        "wns": -50.2435,
+        "area": 2605.87,
+        "ok": true
+      }
+    ],
+    "wall_period": 1138,
+    "wall_wns": -3.88567
+  },
+  "uart": {
+    "design": "uart",
+    "shipped_period": 270,
+    "calibrated_period": 295,
+    "wns_at_calibrated": 1.27662,
+    "area_at_calibrated": 107.017,
+    "converged": true,
+    "iters": 1,
+    "history": [
+      {
+        "period": 295,
+        "wns": 1.27662,
+        "area": 107.017,
+        "ok": true
+      }
+    ],
+    "wall_period": 295,
+    "wall_wns": 1.27662
+  }
+}

@@ -20,6 +20,7 @@ import json
 import os
 import random
 import subprocess
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 
@@ -28,7 +29,7 @@ from patch_orfs import DEFAULT_ORFS, apply as apply_patch
 
 RECIPE_DIR = os.environ.get(
     "LEARNED_SYNTH_RECIPE_DIR",
-    "/tmp/claude-1000/-home-sam/8a61cee1-e8a5-4953-8fd4-94c275ab8888/scratchpad/recipes",
+    os.path.join(tempfile.gettempdir(), "learned-synth", "recipes"),
 )
 
 
@@ -70,19 +71,27 @@ def run_recipe(
     wns_penalty: float = 1.0,
     timeout_s: int = 3600,
     num_cores: int = 4,
+    extra_vars: dict[str, str] | None = None,
 ) -> Result:
     """Run one recipe through ORFS. num_cores caps OpenROAD threads per run so we
-    do not crowd out other work on a shared machine (default deliberately low)."""
+    do not crowd out other work on a shared machine (default deliberately low).
+
+    extra_vars are appended as KEY=VALUE make overrides, e.g. {"SDC_FILE": path} to
+    run at a calibrated clock period. They do not change the FLOW_VARIANT, so the
+    caller must vary recipe.label when the same recipe is run under different
+    extra_vars, or the runs collide in the same output directory.
+    """
     os.makedirs(RECIPE_DIR, exist_ok=True)
     script_path = os.path.join(RECIPE_DIR, f"{recipe.variant}.script")
     with open(script_path, "w") as f:
         f.write(recipe.to_script())
 
+    extra = "".join(f" {k}={v}" for k, v in (extra_vars or {}).items())
     cmd = (
         f"source {orfs}/env.sh >/dev/null 2>&1 && cd {orfs}/flow && "
         f"make DESIGN_CONFIG=./designs/asap7/{design}/config.mk "
         f"FLOW_VARIANT={recipe.variant} ABC_SCRIPT={script_path} "
-        f"SYNTH_USE_SYN=0 NUM_CORES={num_cores}"
+        f"SYNTH_USE_SYN=0 NUM_CORES={num_cores}{extra}"
     )
     t0 = time.time()
     proc = subprocess.run(

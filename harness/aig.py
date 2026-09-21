@@ -17,6 +17,7 @@ import glob
 import os
 import re
 import subprocess
+import tempfile
 
 from patch_orfs import DEFAULT_ORFS
 
@@ -24,7 +25,7 @@ YOSYS = os.path.join(DEFAULT_ORFS, "tools", "install", "yosys", "bin", "yosys")
 YOSYS_ABC = os.path.join(DEFAULT_ORFS, "tools", "install", "yosys", "bin", "yosys-abc")
 AIG_DIR = os.environ.get(
     "LEARNED_SYNTH_AIG_DIR",
-    "/tmp/claude-1000/-home-sam/8a61cee1-e8a5-4953-8fd4-94c275ab8888/scratchpad/aigs",
+    os.path.join(tempfile.gettempdir(), "learned-synth", "aigs"),
 )
 _STATS = re.compile(r"and\s*=\s*(\d+)\s*lev\s*=\s*(\d+)")
 _FULL = re.compile(

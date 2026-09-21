@@ -1,3 +1,5 @@
+> **Prior work (proxy-metric era).** Greedy picker on the ABC node-count proxy. The current real-QoR predictor / route-pruning result is in [PREDICTOR.md](PREDICTOR.md). Kept for provenance.
+
 # From predictor to picker: does the GNN choose good transforms?
 
 ## Goal

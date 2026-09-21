@@ -1,76 +1,123 @@
 # learned-synth
 
-Learning better logic-synthesis recipes for the open ASAP7 (Arizona State
-University 7nm predictive Process Design Kit) flow, graded on real downstream
-QoR (Quality of Results) instead of proxy metrics.
+**Learning logic-synthesis recipes that beat the industry-standard `resyn2` script,
+graded on real chip sign-off (post-place-and-route), not proxy metrics.**
 
-The open flow runs a fixed, hand-tuned ABC (And-Inverter Graph optimizer)
-script (`resyn2`) for every design. This project learns a better transformation
-sequence per design and measures the payoff at technology mapping and, where it
-matters, at post-detailed-route sign-off using OpenROAD.
+The open RTL (Register Transfer Level) to layout flow runs one fixed, hand-tuned
+ABC (And-Inverter Graph optimizer) script - `resyn2` - for every design. `resyn2` is
+a 2000s-era heuristic that was never tuned to a modern standard-cell library. This
+project searches for a better per-design transformation sequence and measures the
+payoff where it actually counts: post-detailed-route area at matched timing, produced
+by the real OpenROAD flow on the ASAP7 (Arizona State University 7nm predictive
+Process Design Kit) platform.
 
-## How the flow gets to its first AIG (And-Inverter Graph)
+![results](docs/results.png)
 
-Two tools split the work, and it is worth being precise about the boundary:
-Yosys produces the bit-level logic, but the AIG (And-Inverter Graph) data
-structure itself is built by ABC (And-Inverter Graph optimizer).
+## Headline results
 
-1. **Parse and elaborate (Yosys).** Read the Verilog, resolve parameters, unroll
-   generate blocks, and build word-level operators (adders, multiplexers, and so
-   on).
-2. **Coarse synthesis (Yosys).** Optimize at the word level, then bit-blast:
-   break those word-level operators down into single-bit generic gates and
-   flip-flops.
-3. **Handoff (Yosys `abc` pass).** Yosys separates the combinational logic from
-   the registers and hands the *entire* combinational network between the
-   registers to ABC (And-Inverter Graph optimizer) as a single multi-input,
-   multi-output block. It is not handed over one cone at a time (see below).
-4. **Build the first AIG (ABC).** ABC runs structural hashing (`strash`), which
-   is the step that actually constructs the AIG (And-Inverter Graph): everything
-   becomes 2-input AND nodes with complemented edges. This strashed graph is the
-   first AIG.
-5. **Optimize (ABC).** The `resyn2` recipe runs on that AIG. This is the step
-   `learned-synth` replaces.
+Measured on 9 designs (gcd, uart, aes, ibex, jpeg, ethmac, riscv32i, mock-alu,
+mock-cpu), every recipe run through the full flow at each design's matched-delay
+clock, 234 clean place-and-route runs.
 
-So Yosys hands over logic; ABC (And-Inverter Graph optimizer) turns it into an
-AIG (And-Inverter Graph) and optimizes it. Two consequences that matter here:
+- **Goal 1 - `resyn2` is beatable.** A searched recipe beats `resyn2` on **5 of 9
+  designs, by up to 5.8% cell area at matched delay** (real post-route sign-off), with
+  pure random search. resyn2 is not optimal per design. See
+  [results/HEADLINE.md](results/HEADLINE.md).
+- **Goal 2 - the search is cheap.** A recipe's post-synthesis area predicts its
+  post-route area strongly (Spearman +0.79 within a design), so recipes can be ranked
+  after cheap synthesis and only the best few sent to full routing. **Routing only the
+  top-3 of 26 candidates recovers 89% of the achievable area gain while skipping 88%
+  of the place-and-route runs.** See [results/PREDICTOR.md](results/PREDICTOR.md).
 
-- **The first AIG is not unique to the RTL (Register Transfer Level).** Its shape
-  depends on how Yosys bit-blasted and pre-optimized upstream, so the Yosys
-  front-end script must be held fixed when comparing recipes, or the recipes are
-  not being compared on the same starting graph.
-- **Registers are not in the AIG.** ABC (And-Inverter Graph optimizer) optimizes
-  the combinational logic *between* flip-flops, so a recipe reshapes logic
-  clouds, not the sequential structure.
+## Why this is the interesting version of the problem
 
-### What "the combinational network" means, and why it is not one cone
+Almost all recipe-learning work grades on AIG (And-Inverter Graph) node count and
+logic depth, because the authors have no downstream flow. Grading on real
+post-technology-mapping and post-route Quality of Results (QoR) is the differentiator,
+and it changes the answer: the project's own earlier proxy-only study is kept as
+[prior work](results/RESULTS.md) precisely to show the gap. The open OpenROAD plus
+ASAP7 flow turns into a label factory that emits exactly the sign-off signal the field
+usually lacks.
 
-A **logic cone** (a fan-in cone) is defined relative to one endpoint: pick a
-flip-flop data input or a primary output, trace backward through the
-combinational gates that feed it, and stop at every startpoint (a flip-flop
-output or a primary input). Everything swept up along the way is that endpoint's
-cone. A cone is therefore bounded by registers and ports, and it is exactly the
-combinational cloud that one timing path lives in.
+## How it works
 
-A real design has many cones, and they **overlap**: two endpoints usually share
-gates in their fan-in. ABC (And-Inverter Graph optimizer) does not process these
-one at a time. It ingests the whole combinational network as a single AIG
-(And-Inverter Graph), and structural hashing (`strash`) merges the shared gates
-so a node used by several cones exists only once. The recipe then optimizes that
-whole shared graph globally.
+1. **Recipe injection ([harness/patch_orfs.py](harness/patch_orfs.py)).** A reversible
+   one-line patch makes the flow honor an `ABC_SCRIPT` override, so any recipe is just
+   a text file fed to the classic `abc -script` path. (Three designs route through a
+   newer `abc_new` path that ignores the override; `--force-classic-abc` keeps them on
+   the classic path - see [results/HEADLINE.md](results/HEADLINE.md).)
+2. **The harness ([harness/harness.py](harness/harness.py)).** `run_recipe(design,
+   recipe)` runs the full flow and scrapes post-route area, timing, and power into one
+   record. Everything else is a loop over this.
+3. **Matched-delay clocks ([harness/calibrate_clocks.py](harness/calibrate_clocks.py)).**
+   To compare area fairly, each design's clock is calibrated so `resyn2` sits at its
+   timing wall (Worst Negative Slack near zero). Area is only comparable at a common
+   timing bar. Loosening the clock does not help: the tool simply optimizes less and
+   the delay grows to fill the slack ([results/CLOCKS.md](results/CLOCKS.md)).
+4. **The label factory ([harness/labelsweep.py](harness/labelsweep.py)).** For each
+   design, `resyn2` plus 25 random recipes are run through the full flow at the
+   matched-delay clock, logging real QoR per recipe. This is both the Goal 1
+   leaderboard and the Goal 2 training data.
+5. **The predictor ([harness/predict_qor.py](harness/predict_qor.py)).** A cheap,
+   synthesis-only signal ranks recipes so only the top few are routed.
 
-The word "cone" also appears at a much smaller scale *inside* the recipe:
-`rewrite` and `refactor` each grab a tiny local cut (a handful of nodes) around
-one node, swap in a better implementation, and move on. So there are two scales:
-the design-level fan-in cone (all of which ABC ingests at once), and the small
-local cut the recipe edits during optimization.
+There is also a load-aware runner ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py))
+that sizes route concurrency to available memory, so the sweeps can share a machine
+with other jobs without thrashing.
 
-See [PLAN.md](PLAN.md) for the full project plan,
-[docs/default-abc-flow.md](docs/default-abc-flow.md) for a diagrammed walkthrough
-of the default flow and the `resyn2` recipe this project replaces, and
-[docs/experiment-pipeline.md](docs/experiment-pipeline.md) for the head-to-head
-experiment (FlowTune search versus an RL (Reinforcement Learning) policy with a
-GNN (Graph Neural Network)) and its training and testing pipelines, and
-[docs/harness-and-sweeps.md](docs/harness-and-sweeps.md) for the concrete harness
-mechanics (recipe injection into the real OpenROAD-flow-scripts ASAP7 flow) and the
-sweeps we launch.
+## Repository map
+
+| path | what |
+|---|---|
+| `harness/harness.py` | `run_recipe(design, recipe) -> real post-route QoR` |
+| `harness/recipes.py` | classic-ABC recipe representation + random generator |
+| `harness/patch_orfs.py` | reversible `ABC_SCRIPT` override into the flow |
+| `harness/probe_designs.py` | which designs synthesize cleanly (design curation) |
+| `harness/baseline.py` | `resyn2` baseline across the corpus (Rung 1) |
+| `harness/calibrate_clocks.py` | per-design matched-delay clock calibration |
+| `harness/labelsweep.py` | the label factory: recipes -> real QoR |
+| `harness/analyze.py` | Goal 1 matched-delay leaderboard |
+| `harness/predict_qor.py` | Goal 2 predictor + route-budget skip-curve |
+| `harness/make_figure.py` | the results figure above |
+| `results/DESIGN_SET.md`, `BASELINE.md`, `CLOCKS.md` | corpus, baseline, clock calibration |
+| `results/HEADLINE.md`, `PREDICTOR.md` | the Goal 1 and Goal 2 results |
+| `results/RESULTS.md`, `GNN_STUDY.md`, `PICKER_STUDY.md` | prior proxy-metric studies |
+
+## Reproduce
+
+Requires an OpenROAD-flow-scripts checkout with the ASAP7 platform (set
+`LEARNED_SYNTH_ORFS`, or edit `patch_orfs.DEFAULT_ORFS`), plus `numpy` and
+`matplotlib`.
+
+```bash
+cd harness
+python3 probe_designs.py            # which designs synthesize cleanly
+python3 baseline.py                 # resyn2 baseline (full flow)
+python3 calibrate_clocks.py         # matched-delay clocks -> results/clocks.json
+python3 labelsweep.py --n 25 --force-classic-abc   # the label factory
+python3 analyze.py                  # Goal 1 leaderboard
+python3 predict_qor.py              # Goal 2 predictor + skip-curve
+python3 make_figure.py              # regenerate docs/results.png
+```
+
+## Honest limitations
+
+- **The predictor prunes; it does not invent wins.** On tight designs where no random
+  recipe beats `resyn2` (aes, uart, ibex, riscv32i), there is no gain to capture.
+  Extending wins to those designs needs a directed or reinforcement-learning search
+  over the recipe space, which is the natural next step.
+- **9 designs is enough for per-design results, thin for cross-design generalization.**
+  The signal lives in what a recipe does to a specific netlist, not in the recipe
+  string, so predicting for a brand-new design would need a much larger design corpus.
+- **riscv32i** is noisy at its timing wall (many balanced critical paths), so its
+  matched-delay comparison is the least clean of the nine.
+
+## Design detail: where the first AIG comes from
+
+Yosys parses and bit-blasts the RTL and hands the entire combinational network to
+ABC (And-Inverter Graph optimizer); ABC builds the AIG (And-Inverter Graph) via
+structural hashing and runs the recipe on it. The starting AIG depends on how Yosys
+pre-optimized upstream, so the Yosys front-end script is held fixed across recipes,
+and registers are excluded (the recipe reshapes combinational logic between
+flip-flops). See [docs/default-abc-flow.md](docs/default-abc-flow.md) and
+[docs/harness-and-sweeps.md](docs/harness-and-sweeps.md) for the full walkthrough.

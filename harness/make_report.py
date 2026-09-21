@@ -107,8 +107,11 @@ def main():
               "Right now it does not earn its place; that is a finding, not a win.",
               "- RL trained on the node-count proxy; the proxy correlates with, but "
               "is not, real post-route area. The real table is the one that counts.",
-              "- Only three designs synthesize cleanly here (gcd, uart, aes), so the "
-              "generalization claim is thin. This is a scaffold, not a finished study.",
+              "- This early study extracted a proxy AIG for only three designs (gcd, "
+              "uart, aes) via a Yosys-only path, so its generalization claim is thin. "
+              "The real ORFS flow synthesizes all 9 corpus designs cleanly (see "
+              "results/DESIGN_SET.md); the current real-QoR results are in "
+              "results/HEADLINE.md and results/PREDICTOR.md.",
               "- resyn2 is the classic-command baseline. The modern GIA flow ORFS "
               "ships is a stronger external bar (see docs/harness-and-sweeps.md).\n"]
 
