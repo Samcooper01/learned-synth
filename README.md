@@ -28,6 +28,13 @@ clock, 234 clean place-and-route runs.
   after cheap synthesis and only the best few sent to full routing. **Routing only the
   top-3 of 26 candidates recovers 89% of the achievable area gain while skipping 88%
   of the place-and-route runs.** See [results/PREDICTOR.md](results/PREDICTOR.md).
+- **Goal 3 (flagship) - directed search reaches recipes random misses.** A genetic
+  algorithm over recipes with a cheap synthesis-only fitness found, on **riscv32i**, a
+  recipe that **meets timing where resyn2 itself fails** and uses less area - a legal
+  solution neither resyn2 nor random search reached. It also surfaced an honest limit:
+  a pure area objective overshoots into timing violation on the other tight designs, so
+  the search needs a timing-aware fitness (the concrete next step). See
+  [results/FLAGSHIP.md](results/FLAGSHIP.md).
 
 ## Why this is the interesting version of the problem
 
@@ -78,9 +85,10 @@ with other jobs without thrashing.
 | `harness/labelsweep.py` | the label factory: recipes -> real QoR |
 | `harness/analyze.py` | Goal 1 matched-delay leaderboard |
 | `harness/predict_qor.py` | Goal 2 predictor + route-budget skip-curve |
+| `harness/flagship_search.py` | Goal 3 directed (genetic-algorithm) recipe search |
 | `harness/make_figure.py` | the results figure above |
 | `results/DESIGN_SET.md`, `BASELINE.md`, `CLOCKS.md` | corpus, baseline, clock calibration |
-| `results/HEADLINE.md`, `PREDICTOR.md` | the Goal 1 and Goal 2 results |
+| `results/HEADLINE.md`, `PREDICTOR.md`, `FLAGSHIP.md` | the Goal 1, 2, and 3 results |
 | `results/RESULTS.md`, `GNN_STUDY.md`, `PICKER_STUDY.md` | prior proxy-metric studies |
 
 ## Reproduce
@@ -97,15 +105,20 @@ python3 calibrate_clocks.py         # matched-delay clocks -> results/clocks.jso
 python3 labelsweep.py --n 25 --force-classic-abc   # the label factory
 python3 analyze.py                  # Goal 1 leaderboard
 python3 predict_qor.py              # Goal 2 predictor + skip-curve
+python3 flagship_search.py --designs riscv32i --pop 20 --gens 12 --verify-k 3   # Goal 3 directed search
 python3 make_figure.py              # regenerate docs/results.png
 ```
 
 ## Honest limitations
 
 - **The predictor prunes; it does not invent wins.** On tight designs where no random
-  recipe beats `resyn2` (aes, uart, ibex, riscv32i), there is no gain to capture.
-  Extending wins to those designs needs a directed or reinforcement-learning search
-  over the recipe space, which is the natural next step.
+  recipe beats `resyn2`, there is no gain for the ranker to capture. The Goal 3 directed
+  search (see [results/FLAGSHIP.md](results/FLAGSHIP.md)) does reach a legal win on
+  riscv32i that random missed, but its area-only objective overshoots timing on the
+  other tight designs. The concrete next step is a timing-aware fitness (minimize area
+  subject to meeting timing), which needs a cheap post-synthesis slack signal the open
+  flow does not currently expose, and then a reinforcement-learning policy over the
+  recipe space with a sign-off-graded, timing-aware reward.
 - **9 designs is enough for per-design results, thin for cross-design generalization.**
   The signal lives in what a recipe does to a specific netlist, not in the recipe
   string, so predicting for a brand-new design would need a much larger design corpus.
