@@ -5,7 +5,12 @@ designs, it can be improved: on 6 of 9 designs, a recipe chosen for that design 
 the standard recipe, `resyn2`, with up to 5.8% less chip area at the same clock speed,
 verified by full chip layouts.**
 
-**Project page (the walkthrough, with diagrams):** https://samcooper01.github.io/learned-synth/
+<p align="center">
+  <a href="https://samcooper01.github.io/learned-synth/"><img src="docs/preview.png" width="760" alt="Project page: Is the standard recipe for open-source logic synthesis good enough? A better recipe on 6 of 9 designs, up to 5.8% less chip area."></a>
+</p>
+<p align="center">
+  <b><a href="https://samcooper01.github.io/learned-synth/">&#8594; Read the full walkthrough: the whole story in 8 sections, with diagrams, an interactive search demo, and every result explained</a></b>
+</p>
 
 Logic synthesis optimizes a design's logic one small step at a time, following a
 recipe. Yosys hands this job to ABC (And-Inverter Graph optimizer), and the recipe
