@@ -39,20 +39,16 @@ technology, instead of on the usual gate-count shortcut.
    Tree Synthesis), routing) at an iso-timing operating point: a per-design clock
    constraint calibrated so `resyn2` sits at near-zero slack. Random sampling of 25 recipes
    per design beats `resyn2` on 5 of 9 designs, with up to 5.8% area reduction.
-   Write-ups: [results/HEADLINE.md](results/HEADLINE.md),
-   [results/CLOCKS.md](results/CLOCKS.md).
 3. **A low-cost QoR (Quality of Results) predictor for search pruning.**
    Post-synthesis cell area, available in seconds, predicts post-route area with a
    Spearman rank correlation of 0.79. Routing only the top 3 of 26 candidates recovers
    89% of the achievable area gain while skipping 88% of place-and-route runs.
-   Write-up: [results/PREDICTOR.md](results/PREDICTOR.md).
 4. **Surrogate-guided evolutionary search.** A genetic algorithm (elitism, tournament
    selection, crossover, mutation) uses the post-synthesis surrogate as its fitness
    function, about 180 evaluations per design in 2 to 10 minutes, and verifies the top
    3 candidates post-route. It achieves timing closure on riscv32i, where `resyn2` has
    negative slack, with a 0.8% area reduction, and a near miss on aes: 5% area
    reduction with negative slack under 1% of the clock period.
-   Write-up: [results/FLAGSHIP.md](results/FLAGSHIP.md).
 
 | Design | Size (cells) | Best recipe versus `resyn2` | Found by |
 |---|---|---|---|
