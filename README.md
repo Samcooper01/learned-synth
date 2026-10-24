@@ -16,7 +16,7 @@ recipe. [Yosys](https://yosyshq.net/yosys/) hands this job to
 [ABC (And-Inverter Graph optimizer)](https://github.com/berkeley-abc/abc), and the
 recipe never changes: a tiny controller and a large processor get exactly the same
 steps. [`resyn2`](https://github.com/berkeley-abc/abc/blob/master/abc.rc#L111) is the
-standard hand-tuned recipe that ships with ABC (And-Inverter Graph optimizer). This
+standard hand-tuned recipe that ships with ABC. This
 project builds new recipes from the same classic transforms and grades every result on
 a full chip layout through sign-off, with the open [OpenROAD](https://theopenroadproject.org/)
 flow ([OpenROAD Flow Scripts](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts))
@@ -30,15 +30,15 @@ technology, instead of on the usual gate-count shortcut.
 1. **Machine learning on a proxy metric.** A PPO (Proximal Policy Optimization)
    reinforcement learning agent that builds a recipe one transform at a time, rewarded
    by AIG (And-Inverter Graph) node count; a GNN (Graph Neural Network) surrogate that
-   predicts how much of an AIG (And-Inverter Graph) `resyn2` would remove; and a greedy
-   policy that picks each transform by the GNN (Graph Neural Network)'s prediction.
+   predicts how much of an AIG `resyn2` would remove; and a greedy
+   policy that picks each transform by the GNN's prediction.
    The learned recipes were then checked against post-route QoR (Quality of Results).
 2. **Sign-off-graded design space exploration.** A harness that runs any recipe
    through the full RTL (Register Transfer Level)-to-sign-off flow (synthesis,
    placement, CTS (Clock Tree Synthesis), routing) at an iso-timing operating point: a
    per-design clock constraint calibrated so `resyn2` sits at near-zero slack. 25
    random recipes plus `resyn2` per design, 234 full layouts in total.
-3. **A low-cost QoR (Quality of Results) predictor for search pruning.**
+3. **A low-cost QoR predictor for search pruning.**
    Post-synthesis cell area, available in seconds, ranks candidate recipes before place
    and route, so only the top few are laid out.
 4. **Surrogate-guided evolutionary search.** A genetic algorithm (elitism, tournament
@@ -113,8 +113,7 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 
 ## Reproduce
 
-Requires an OpenROAD-flow-scripts checkout with the ASAP7 (Arizona State University
-7nm predictive Process Design Kit) platform (set `LEARNED_SYNTH_ORFS`, or edit
+Requires an OpenROAD-flow-scripts checkout with the ASAP7 platform (set `LEARNED_SYNTH_ORFS`, or edit
 `patch_orfs.DEFAULT_ORFS`), plus `numpy` and `matplotlib`.
 
 ```bash
@@ -160,9 +159,8 @@ python3 make_figure.py              # regenerate the charts in docs/
 
 ## Design detail: where the first logic graph comes from
 
-Yosys parses the design and hands its whole combinational network to ABC (And-Inverter
-Graph optimizer), which builds the AIG (And-Inverter Graph) by structural hashing and
-runs the recipe on it. The starting AIG (And-Inverter Graph) depends on how Yosys
+Yosys parses the design and hands its whole combinational network to ABC, which builds the AIG by structural hashing and
+runs the recipe on it. The starting AIG depends on how Yosys
 pre-optimized upstream, so the Yosys front-end script is held fixed across recipes, and
 registers are excluded: the recipe reshapes the combinational logic between
 flip-flops. See [docs/default-abc-flow.md](docs/default-abc-flow.md) for the full
