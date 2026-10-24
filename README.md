@@ -41,7 +41,7 @@ technology, instead of on the usual gate-count shortcut.
 3. **A low-cost QoR predictor for search pruning.**
    Post-synthesis cell area, available in seconds, ranks candidate recipes before place
    and route, so only the top few are laid out.
-4. **Surrogate-guided evolutionary search.** A genetic algorithm (elitism, tournament
+4. **Surrogate-guided evolutionary search.** A genetic algorithm (tournament
    selection, crossover, mutation) that uses the post-synthesis surrogate as its
    fitness function, about 180 evaluations per design, then verifies its top 3
    candidates post-route.
