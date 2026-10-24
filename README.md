@@ -128,9 +128,6 @@ python3 make_figure.py              # regenerate the charts in docs/
 
 ## Design detail: where the first logic graph comes from
 
-Yosys parses the design and hands its whole combinational network to ABC, which builds the AIG by structural hashing and
-runs the recipe on it. The starting AIG depends on how Yosys
-pre-optimized upstream, so the Yosys front-end script is held fixed across recipes, and
-registers are excluded: the recipe reshapes the combinational logic between
-flip-flops. See [docs/default-abc-flow.md](docs/default-abc-flow.md) for the full
-walkthrough.
+Yosys hands the design's combinational logic to ABC, which turns it into an AIG and
+runs the recipe on it. The Yosys front end is held fixed across recipes, so every
+recipe starts from the same graph. More in [docs/default-abc-flow.md](docs/default-abc-flow.md).
