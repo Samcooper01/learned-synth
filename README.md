@@ -6,10 +6,9 @@ the standard recipe, `resyn2`, with up to 5.8% less chip area at the same clock 
 verified by full chip layouts.**
 
 <p align="center">
-  <a href="https://samcooper01.github.io/learned-synth/"><img src="docs/preview.png" width="760" alt="Project page: Is the standard recipe for open-source logic synthesis good enough? A better recipe on 6 of 9 designs, up to 5.8% less chip area."></a>
-</p>
-<p align="center">
-  <b><a href="https://samcooper01.github.io/learned-synth/">&#8594; Read the full walkthrough: the whole story in 8 sections, with diagrams, an interactive search demo, and every result explained</a></b>
+  <a href="https://samcooper01.github.io/learned-synth/"><img src="docs/banner.png" width="800" alt="Project page: Is the standard recipe for open-source logic synthesis good enough? A better recipe on 6 of 9 designs. Read the walkthrough."></a>
+  <br>
+  <b><a href="https://samcooper01.github.io/learned-synth/">&#8594; Read the full walkthrough on the project page</a></b>
 </p>
 
 Logic synthesis optimizes a design's logic one small step at a time, following a
