@@ -92,15 +92,11 @@ clock: a recipe counts as better only if it meets timing and uses less area than
    design, `resyn2` plus 25 random recipes run through the full flow at the matched
    clock: about 79 hours of compute in total, from about a minute per layout (uart) to
    about an hour (ethmac).
-6. **A silent bug, caught.** On ibex, mock-alu and riscv32i every recipe first gave
-   exactly the same area: their settings sent synthesis down a newer code path that
-   ignores the recipe. `--force-classic-abc` keeps them on the classic path, after which
-   mock-alu became a real win ([results/HEADLINE.md](results/HEADLINE.md)).
-7. **Sharing one machine ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py)).**
+6. **Sharing one machine ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py)).**
    Each layout needs about 3.6 gigabytes of memory at its peak. The runner starts another
    layout only when one more fits in free memory above a reserve, staggers launches,
    never stops a running layout, and skips finished layouts when restarted.
-8. **The cheap score and the directed search
+7. **The cheap score and the directed search
    ([harness/predict_qor.py](harness/predict_qor.py),
    [harness/flagship_search.py](harness/flagship_search.py)).** The search runs 12
    rounds of 20 recipes, scored by synthesis only, and lays out its top 3 once at the
@@ -110,20 +106,12 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 
 | Path | What |
 |---|---|
-| `docs/index.html` | the project page (served by GitHub Pages), with its images |
-| `docs/default-abc-flow.md` | walkthrough of the default flow and the `resyn2` recipe |
-| `docs/archive/` | early planning documents, kept for provenance |
-| `harness/harness.py` | `run_recipe(design, recipe)`: one recipe through the full flow |
-| `harness/recipes.py` | the recipe representation, `resyn2`, and the random-recipe generator |
-| `harness/patch_orfs.py` | reversible patch so the flow accepts a recipe file |
-| `harness/probe_designs.py`, `baseline.py`, `calibrate_clocks.py` | design selection, the `resyn2` baseline, matched-timing clocks |
-| `harness/labelsweep.py`, `loadmanaged_rerun.py`, `analyze.py` | the 234 layouts, the memory-aware runner, the leaderboard |
-| `harness/predict_qor.py`, `flagship_search.py` | the cheap score and the directed search |
-| `harness/make_figure.py` | the charts on the page and in this README |
-| `harness/aig.py`, `rl_env.py`, `train_rl.py`, `eval_policy.py`, `overnight.sh` | the first attempt: reinforcement learning on gate count |
-| `harness/aig_graph.py`, `gnn_data.py`, `gnn_train.py`, `gnn_run.sh`, `picker.py`, `microbench/` | the first attempt: the graph neural network and the picker |
-| `results/` | every result file and write-up linked above |
-| `models/` | the trained agent and graph-network weights from the first attempt |
+| `docs/` | the project page and its images, plus a walkthrough of the default flow |
+| `harness/harness.py` | runs one recipe through the full flow; the other scripts loop over it |
+| `harness/` pipeline scripts | design selection through directed search, in the order under Reproduce |
+| `harness/` `aig*`, `rl_env`, `train_rl`, `eval_policy`, `gnn_*`, `picker` | the earlier machine-learning studies |
+| `results/` | every data file and write-up |
+| `models/` | trained weights from the machine-learning studies |
 
 ## Reproduce
 
