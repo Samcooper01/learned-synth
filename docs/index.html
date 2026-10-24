@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en" data-look="paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>learned-synth - is the standard recipe for open-source logic synthesis good enough?</title>
+<meta name="description" content="On 6 of 9 designs, a logic-synthesis recipe chosen for that design beats resyn2, the standard recipe, with up to 5.8% less chip area at the same clock speed, verified by full chip layouts.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Is the standard recipe for open-source logic synthesis good enough?">
+<meta property="og:description" content="On 6 of 9 designs, a recipe chosen for that design beats resyn2, the standard recipe, with up to 5.8% less chip area at the same clock speed, verified by full chip layouts.">
+<meta property="og:url" content="https://samcooper01.github.io/learned-synth/">
+<meta property="og:image" content="https://samcooper01.github.io/learned-synth/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta property="og:image:alt" content="Is the standard recipe for open-source logic synthesis good enough? A better recipe on 6 of 9 designs, up to 5.8% less chip area.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap">
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --text:#14181f; --muted:#5a6472;
+    --border:#e3e7ec; --accent:#0b6bcb; --win:#0a8f6b; --warn:#c2560a;
+    --faint:#aab2bd;
+    --shadow:0 1px 3px rgba(20,24,31,.06),0 8px 24px rgba(20,24,31,.05);
+    --maxw:860px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1117; --surface:#161b22; --text:#e6edf3; --muted:#9aa4b2;
+      --border:#283039; --accent:#58a6ff; --win:#3fb950; --warn:#d29922;
+      --faint:#495767;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 20px}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  h1,h2,h3{line-height:1.22; letter-spacing:-.01em}
+  h2{font-size:1.5rem; margin:0 0 .5rem}
+  .q{font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0 0 2px}
+  section{padding:46px 0; border-top:1px solid var(--border)}
+  .lead{font-size:1.06rem}
+  p{color:var(--text)}
+  .muted{color:var(--muted)}
+
+  /* hero */
+  header{padding:66px 0 54px; background:
+    radial-gradient(1200px 420px at 50% -140px, color-mix(in srgb,var(--accent) 16%, transparent), transparent);}
+  .eyebrow{font-size:.8rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  header h1{font-size:2.6rem; margin:0 0 .6rem; text-align:center}
+  .tag{font-size:1.18rem; color:var(--text); max-width:700px; margin:0 auto 26px; text-align:center}
+  .tag .thesis{color:var(--text); font-weight:600}
+  .btns{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:9px;
+    font-weight:600; font-size:.95rem; border:1px solid var(--border)}
+  .btn.primary{background:var(--accent); color:#fff; border-color:transparent}
+  .btn.primary:hover{text-decoration:none; filter:brightness(1.07)}
+  .btn.ghost{background:var(--surface); color:var(--text)}
+  .btn.ghost:hover{text-decoration:none; border-color:var(--accent)}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:38px}
+  .stat{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:18px; box-shadow:var(--shadow)}
+  .stat .big{font-size:1.85rem; font-weight:800; letter-spacing:-.02em; color:var(--accent)}
+  .stat .lbl{font-size:.9rem; color:var(--muted); margin-top:4px}
+
+  /* diagram shell */
+  .diagram{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; box-shadow:var(--shadow); margin-top:16px}
+  .diagram svg{width:100%; height:auto; display:block}
+  .cap{color:var(--muted); font-size:.85rem; margin-top:9px}
+  svg text{font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  /* cards */
+  .cards{display:grid; gap:14px; margin-top:16px}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:18px 20px; box-shadow:var(--shadow)}
+  .card h3{margin:0 0 6px; font-size:1.08rem; display:flex; align-items:center; gap:9px}
+  .card p{margin:0; color:var(--muted)}
+  .card .hl{color:var(--text); font-weight:600}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .pill{font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:999px;
+    background:color-mix(in srgb,var(--win) 16%,transparent); color:var(--win)}
+  .pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent); color:var(--warn)}
+
+  figure{margin:20px 0 0}
+  figure img{width:100%; height:auto; border:1px solid var(--border); border-radius:12px; background:#fff}
+  figcaption{color:var(--muted); font-size:.85rem; margin-top:8px}
+
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+  .badge{font-size:.82rem; padding:5px 11px; border:1px solid var(--border); border-radius:999px;
+    background:var(--surface); color:var(--muted)}
+  ul.tight{margin:.3rem 0 0; padding-left:1.2rem; color:var(--muted)}
+  ul.tight li{margin:.35rem 0}
+  ol.rounds{margin:.4rem 0 0; padding-left:1.4rem}
+  ol.rounds li{margin:.45rem 0; padding:2px 8px; border-radius:6px; transition:background .3s}
+  ol.rounds li.active{background:color-mix(in srgb,var(--accent) 11%,transparent)}
+
+  /* genetic-algorithm animation */
+  .ga-top{display:flex; justify-content:space-between; gap:12px; font-size:.85rem; font-weight:600; margin-bottom:4px}
+  .ga-round{color:var(--accent)} .ga-best{color:var(--win)}
+  .ga-bottom{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 14px; margin-top:6px}
+  .ga-say{margin:0; font-size:.95rem; min-height:3em; display:flex; align-items:center; flex:1 1 320px}
+  .ga-btn{font:inherit; font-size:.85rem; font-weight:600; padding:6px 16px; border-radius:8px; flex:none;
+    border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer}
+  .ga-btn:hover{border-color:var(--accent)}
+  .ga-btn:disabled{opacity:.4; cursor:default; border-color:var(--border)}
+  .ga-ctl{display:flex; flex-wrap:wrap; align-items:center; gap:6px; flex:none}
+  @media (max-width:640px){ .ga-ctl{flex:1 1 100%} .ga-ctl .ga-btn{padding:6px 10px} }
+  .ga-count{font-size:.8rem; color:var(--muted); margin-right:6px; white-space:nowrap}
+  #ga-svg.instant, #ga-svg.instant *{transition:none !important}
+  #ga-svg .mv{transition:transform .75s cubic-bezier(.4,0,.2,1), opacity .45s ease}
+  #ga-svg .bar{transform-box:fill-box; transform-origin:0 50%; transition:transform .6s ease}
+  #ga-svg .fade{transition:opacity .35s ease}
+  .ghl-a{fill:color-mix(in srgb,var(--accent) 9%,transparent); stroke:var(--accent); stroke-width:1.6}
+  .ghl-b{fill:none; stroke:var(--muted); stroke-width:1.4; stroke-dasharray:5 3}
+  .gbar{fill:color-mix(in srgb,var(--muted) 38%,var(--surface))}
+  .gnum{fill:var(--text); font-size:12px; font-weight:600}
+  .gtag{fill:color-mix(in srgb,var(--win) 16%,var(--surface))}
+  .gtagt{fill:var(--win); font-size:11px; font-weight:700}
+  .stepx{fill:none; stroke:var(--faint); stroke-width:1.3; stroke-dasharray:3 3}
+  @media (prefers-reduced-motion:reduce){
+    #ga-svg .mv, #ga-svg .bar, #ga-svg .fade{transition:none}
+  }
+
+  /* results section */
+  .res-wrap{overflow-x:auto; margin-top:18px; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; box-shadow:var(--shadow)}
+  table.res{width:100%; min-width:660px; border-collapse:collapse; font-size:.9rem}
+  table.res th{text-align:left; font-size:.8rem; color:var(--muted);
+    font-weight:700; padding:11px 14px; border-bottom:1px solid var(--border)}
+  table.res td{padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:top}
+  table.res tr:last-child td{border-bottom:none}
+  table.res tr.grp td{background:color-mix(in srgb,var(--accent) 6%,var(--surface)); font-size:.82rem; font-weight:700;
+    color:var(--accent); padding:7px 14px}
+  table.res tr.grp.hold td{background:color-mix(in srgb,var(--muted) 8%,var(--surface)); color:var(--muted)}
+  table.res .dn{font-weight:700} table.res .dd{color:var(--muted); font-size:.8rem}
+  table.res .num, table.res td:last-child{white-space:nowrap; color:var(--muted)}
+  table.res .ok{color:var(--muted)} table.res .late{color:var(--warn); font-weight:600}
+  table.res .gain{color:var(--win); font-weight:700} table.res .none{color:var(--muted)}
+
+  /* first attempt: agent versus resyn2 on the real chip */
+  .vs-wrap{overflow-x:auto; margin-top:12px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow)}
+  table.vs{width:100%; border-collapse:collapse; font-size:.9rem}
+  table.vs th{text-align:left; font-size:.8rem; color:var(--muted); font-weight:700; padding:10px 14px; border-bottom:1px solid var(--border)}
+  table.vs td{padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:top}
+  table.vs tr:last-child td{border-bottom:none}
+  table.vs td:first-child{color:var(--muted); width:34%}
+  table.vs .pill{margin-left:4px; white-space:nowrap}
+  table.vs td.b{color:var(--win); font-weight:700; background:color-mix(in srgb,var(--win) 7%,transparent)}
+  table.vs td.w{color:var(--warn); font-weight:700; background:color-mix(in srgb,var(--warn) 7%,transparent)}
+  @media (max-width:640px){ table.vs th, table.vs td{padding:8px 9px} table.vs .pill{display:block; width:max-content; margin:4px 0 0; line-height:1.6} }
+  table.vs.n1 td:first-child{width:auto; color:var(--text); font-weight:700}
+  table.vs tr.grp td{background:color-mix(in srgb,var(--accent) 6%,var(--surface)); color:var(--accent); font-weight:700; font-size:.82rem; padding:7px 14px}
+  ol.took{margin:.5rem 0 0; padding-left:1.4rem}
+  ol.took li{margin:.5rem 0}
+
+  footer{border-top:1px solid var(--border); padding:30px 0 50px; color:var(--muted); font-size:.9rem}
+
+  @media (max-width:640px){
+    header h1{font-size:2rem}
+    .stats{grid-template-columns:1fr}
+    .two{grid-template-columns:1fr}
+  }
+  /* table of contents: a small numbered list in the left margin that follows the
+     reader. The page stays centered, so the list shrinks to fit the margin: full labels
+     from 1320px, compact from 1200px, numbers only from 1000px. Below 1000px it is a
+     small floating card, opened and closed by the Contents button. */
+  section{scroll-margin-top:12px}
+  .toc{position:fixed; top:96px; left:calc(50% - var(--maxw) / 2 - 220px); width:196px; z-index:40;
+    font-size:13px; counter-reset:toc; opacity:0; visibility:hidden; transition:opacity .2s, visibility .2s}
+  .toc.is-on{opacity:1; visibility:visible}
+  .toc-h{margin:0 0 6px 12px; font:700 10px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted)}
+  .toc ol{list-style:none; margin:0; padding:0; border-left:1px solid var(--border)}
+  .toc li{counter-increment:toc}
+  .toc a{display:flex; gap:10px; padding:5px 12px; margin-left:-1px; border-left:2px solid transparent;
+    line-height:1.35; color:var(--muted); text-decoration:none}
+  .toc a::before{content:counter(toc, decimal-leading-zero); font:700 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:var(--faint); padding-top:1px}
+  .toc a:hover{color:var(--text); text-decoration:none}
+  .toc a.is-here{color:var(--accent); border-left-color:var(--accent); font-weight:700}
+  .toc a.is-here::before{color:var(--accent)}
+  .toc-btn{display:none; position:fixed; left:12px; bottom:12px; z-index:41; font:inherit; font-size:.8rem; font-weight:600;
+    padding:7px 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    box-shadow:var(--shadow); cursor:pointer}
+  @media (min-width:1200px) and (max-width:1319px){
+    .toc{width:140px; left:calc(50% - var(--maxw) / 2 - 156px); font-size:12px}
+    .toc a{padding:4px 8px; gap:7px}
+    .toc-h{margin-left:8px}
+  }
+  @media (min-width:1000px) and (max-width:1199px){
+    .toc{width:40px; left:calc(50% - var(--maxw) / 2 - 52px)}
+    .toc-h, .toc .lbl{display:none}
+    .toc a{padding:5px 8px}
+  }
+  @media (max-width:999px){
+    .toc{top:76px !important; left:10px; width:178px; max-height:calc(100vh - 140px); overflow-y:auto; font-size:12px;
+      padding:10px 8px 8px 4px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);
+      opacity:0; visibility:hidden; transform:translateX(-8px); transition:opacity .2s, visibility .2s, transform .2s}
+    .toc.open{opacity:1; visibility:visible; transform:none}
+    .toc a{padding:4px 10px}
+    .toc-btn{display:block}
+  }
+  @media (prefers-reduced-motion:reduce){ .toc{transition:none} }
+  /* phones: diagrams and chart images keep a readable minimum width and scroll
+     sideways inside their own box, so the page itself never scrolls sideways */
+  .swipe{display:none; font-size:.75rem; color:var(--muted); margin:0 0 6px}
+  @media (max-width:640px){
+    .diagram{overflow-x:auto; -webkit-overflow-scrolling:touch}
+    .diagram svg[viewBox^="0 0 860"]{min-width:740px}
+    .diagram.scrolls .swipe{display:block}
+    figure{overflow-x:auto}
+    figure img{min-width:600px}
+  }
+  /* skim layer: a takeaway under every section title, and summaries that stand out */
+  .takeaway{margin:10px 0 16px; padding:10px 14px; border-left:3px solid var(--accent); border-radius:0 8px 8px 0;
+    background:color-mix(in srgb,var(--accent) 8%,var(--surface)); font-weight:600; line-height:1.5}
+  .takeaway span{display:block; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:2px}
+  .summary{margin:18px 0 0; padding:12px 16px; border:1px solid var(--border); border-left:3px solid var(--muted);
+    border-radius:0 10px 10px 0; background:var(--surface); box-shadow:var(--shadow)}
+  /* ---- look: paper (all-serif research paper, cream, oxblood accent) ---- */
+  html[data-look="paper"]{
+    --bg:#fffdf8; --surface:#ffffff; --text:#151413; --muted:#55524b;
+    --border:#e7e2d7; --accent:#9c2a20; --win:#2e6f40; --warn:#b5651d; --faint:#b8b0a1;
+    --shadow:0 1px 2px rgba(40,30,20,.05),0 4px 14px rgba(40,30,20,.04);
+  }
+  @media (prefers-color-scheme:dark){
+    html[data-look="paper"]{
+      --bg:#151413; --surface:#1d1c1a; --text:#efeae0; --muted:#a9a397;
+      --border:#33302b; --accent:#e58b7f; --win:#7cc391; --warn:#e2a35f; --faint:#5e5850;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    }
+  }
+  html[data-look="paper"] body{font-family:"Source Serif 4",Georgia,serif; font-size:18px; line-height:1.6}
+  html[data-look="paper"] svg text, html[data-look="paper"] .btn, html[data-look="paper"] .toc, html[data-look="paper"] table, html[data-look="paper"] .cap, html[data-look="paper"] figcaption, html[data-look="paper"] .ga-top, html[data-look="paper"] .ga-bottom{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+  html[data-look="paper"] h1, html[data-look="paper"] h2, html[data-look="paper"] h3{font-family:"Source Serif 4",Georgia,serif; font-weight:600; letter-spacing:0}
+  html[data-look="paper"] header h1{font-size:2.8rem; line-height:1.12}
+  html[data-look="paper"] h2{font-size:1.8rem}
+  html[data-look="paper"] h3{font-size:1.25rem !important; font-style:normal; font-weight:700}
+  html[data-look="paper"] header{background:none}
+  html[data-look="paper"] .q, html[data-look="paper"] .takeaway span, html[data-look="paper"] .toc-h{font-family:Inter,sans-serif; font-weight:700; letter-spacing:.14em; font-size:.7rem}
+  html[data-look="paper"] .takeaway{background:none; border-left:2px solid var(--accent); border-radius:0; padding:4px 0 4px 16px; font-weight:400; font-style:italic; font-size:1.08rem}
+  html[data-look="paper"] .takeaway span{font-style:normal}
+  html[data-look="paper"] .summary{box-shadow:none; border-left-color:var(--accent)}
+  html[data-look="paper"] .btn{border-radius:3px}
+  html[data-look="paper"] .diagram, html[data-look="paper"] .vs-wrap, html[data-look="paper"] .res-wrap, html[data-look="paper"] .card{border-radius:4px; box-shadow:none}
+</style>
+</head>
+<body>
+
+<nav class="toc" id="toc" aria-label="Sections">
+  <p class="toc-h">On this page</p>
+  <ol>
+    <li><a href="#background" title="Background"><span class="lbl">Background</span></a></li>
+    <li><a href="#question" title="The question"><span class="lbl">The question</span></a></li>
+    <li><a href="#first" title="First attempt"><span class="lbl">First attempt</span></a></li>
+    <li><a href="#second" title="Second attempt"><span class="lbl">Second attempt</span></a></li>
+    <li><a href="#cost" title="The cost"><span class="lbl">The cost</span></a></li>
+    <li><a href="#final" title="The final method"><span class="lbl">The final method</span></a></li>
+    <li><a href="#engineering" title="Engineering"><span class="lbl">Engineering</span></a></li>
+    <li><a href="#results" title="Conclusion"><span class="lbl">Conclusion</span></a></li>
+  </ol>
+</nav>
+<button class="toc-btn" id="toc-btn" type="button" aria-controls="toc" aria-expanded="false">&#9776; Contents</button>
+
+<!-- shared SVG defs (arrow marker + diagram text styles via CSS vars) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+    <path d="M0,0 L7,3.2 L0,6.4 Z" fill="var(--muted)"/>
+  </marker>
+  <marker id="ara" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+    <path d="M0,0 L7,3.2 L0,6.4 Z" fill="var(--accent)"/>
+  </marker>
+  <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+    <path d="M0,0 L7,3.2 L0,6.4 Z" fill="var(--warn)"/>
+  </marker>
+</defs></svg>
+<style>
+  .bx{fill:var(--surface); stroke:var(--border); stroke-width:1.5}
+  .bx.key{stroke:var(--accent); stroke-width:2.2}
+  .bx.faint{stroke:var(--faint); opacity:.55}
+  .tt{fill:var(--text); font-size:13px; font-weight:600}
+  .sub{fill:var(--muted); font-size:11px}
+  .ln{stroke:var(--muted); stroke-width:1.7; fill:none}
+  .lna{stroke:var(--accent); stroke-width:1.9; fill:none}
+  .lnw{stroke:var(--warn); stroke-width:1.7; fill:none}
+  .kl{fill:var(--accent); font-size:10px; font-weight:700}
+  .step{fill:color-mix(in srgb,var(--accent) 12%,var(--surface)); stroke:var(--accent); stroke-width:1.3}
+  .stept{fill:var(--accent); font-size:11px; font-weight:600}
+  .stepf{fill:color-mix(in srgb,var(--faint) 14%,var(--surface)); stroke:var(--faint); stroke-width:1.1; opacity:.6}
+  .stepft{fill:var(--faint); font-size:11px}
+  .stepb{fill:var(--surface); stroke:var(--muted); stroke-width:1.3}
+  .stepbt{fill:var(--text); font-size:11px; font-weight:600}
+  .stepm{fill:color-mix(in srgb,var(--win) 12%,var(--surface)); stroke:var(--win); stroke-width:1.5; stroke-dasharray:4 3}
+  .stepmt{fill:var(--win); font-size:11px; font-weight:600}
+  .win{fill:var(--win)} .warnc{fill:var(--warn)}
+</style>
+
+<header>
+  <div class="wrap">
+    <h1>Is the standard recipe for <span style="white-space:nowrap">open-source</span> logic synthesis good enough?</h1>
+    <p class="tag"><a href="https://yosyshq.net/yosys/">Yosys</a>, the tool that does this step, optimizes every chip&rsquo;s logic with the same fixed recipe of transforms. I took resyn2, the standard recipe that ships with the flow&rsquo;s logic optimizer, and tested whether a recipe chosen for each design does better, judging the answer by full chip layouts instead of the usual shortcut of counting logic gates. <strong class="thesis">For most designs, the standard recipe can be improved: on 6 of 9, a recipe chosen for that design beats resyn2, with up to 5.8% less chip area at the same clock speed.</strong></p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/Samcooper01/learned-synth">View on GitHub</a>
+      <a class="btn ghost" href="#results">See the results</a>
+      <a class="btn ghost" href="#story">Walk me through it</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="story">
+
+  <!-- 1. context -->
+  <section id="background">
+    <p class="q">1 &middot; Background</p>
+    <h2>How a chip gets designed</h2>
+    <p class="lead muted">You do not draw a modern chip by hand. You describe what it should do in code, and a pipeline of software tools turns that description into the physical layout that gets manufactured. Here is that pipeline, simplified:</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 108" role="img" aria-label="The chip design flow: description, logic synthesis, placement, routing, finished layout. This project works at the logic synthesis stage.">
+        <!-- 5 stages -->
+        <g>
+          <rect class="bx" x="2" y="40" width="150" height="46" rx="9"/>
+          <text class="tt" x="77" y="62" text-anchor="middle">Description</text>
+          <text class="sub" x="77" y="78" text-anchor="middle">what it should do</text>
+        </g>
+        <g>
+          <rect class="bx key" x="190" y="34" width="166" height="58" rx="9"/>
+          <text class="kl" x="273" y="27" text-anchor="middle">&#9733; this project</text>
+          <text class="tt" x="273" y="60" text-anchor="middle">Logic synthesis</text>
+          <text class="sub" x="273" y="76" text-anchor="middle">turn it into gates</text>
+        </g>
+        <g>
+          <rect class="bx" x="394" y="40" width="140" height="46" rx="9"/>
+          <text class="tt" x="464" y="62" text-anchor="middle">Placement</text>
+          <text class="sub" x="464" y="78" text-anchor="middle">where gates go</text>
+        </g>
+        <g>
+          <rect class="bx" x="572" y="40" width="130" height="46" rx="9"/>
+          <text class="tt" x="637" y="62" text-anchor="middle">Routing</text>
+          <text class="sub" x="637" y="78" text-anchor="middle">wire them up</text>
+        </g>
+        <g>
+          <rect class="bx" x="740" y="40" width="118" height="46" rx="9"/>
+          <text class="tt" x="799" y="62" text-anchor="middle">Chip layout</text>
+          <text class="sub" x="799" y="78" text-anchor="middle">manufacturable</text>
+        </g>
+        <path class="ln" d="M153 63 L186 63" marker-end="url(#ar)"/>
+        <path class="ln" d="M357 63 L390 63" marker-end="url(#ar)"/>
+        <path class="ln" d="M535 63 L568 63" marker-end="url(#ar)"/>
+        <path class="ln" d="M703 63 L736 63" marker-end="url(#ar)"/>
+      </svg>
+      <div class="cap">The flow runs on free, open-source tools (<a href="https://yosyshq.net/yosys/">Yosys</a> and <a href="https://theopenroadproject.org/">OpenROAD</a>, driven by <a href="https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts">OpenROAD Flow Scripts</a>) and a public 7nm technology (<a href="https://github.com/The-OpenROAD-Project/asap7">ASAP7</a>, from Arizona State University).</div>
+    </div>
+  </section>
+
+  <!-- 2. the knob -->
+  <section id="question">
+    <p class="q">2 &middot; The question</p>
+    <h2>Every design gets the same recipe</h2>
+    <p class="takeaway"><span>Takeaway</span>Every design gets the same fixed 10-step recipe, resyn2, though there are over 280 million possible 10-step recipes.</p>
+    <p class="lead muted">Logic synthesis optimizes your logic one small step at a time, following a <strong>recipe</strong>. Yosys hands this job to <a href="https://github.com/berkeley-abc/abc">Berkeley&rsquo;s logic optimizer</a>, and the recipe never changes: a tiny controller and a large processor get exactly the same steps. The best-known recipe is resyn2, a hand-tuned sequence of the optimizer&rsquo;s classic transforms. I built new recipes from those same transforms, so resyn2 is the one to beat.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 372" role="img" aria-label="resyn2 is a fixed sequence of 10 transforms, listed top to bottom: balance, rewrite, refactor, balance, rewrite, rewrite -z, balance, refactor -z, rewrite -z, balance. It is one of over 280 million possible 10-step recipes built from 7 transforms.">
+        <text class="tt" x="8" y="20">The standard: resyn2</text>
+        <!-- resyn2, top to bottom -->
+        <text class="sub" x="26" y="53" text-anchor="end">1</text>
+        <rect class="step" x="36" y="36" width="150" height="26" rx="7"/><text class="stept" x="111" y="53" text-anchor="middle">balance</text>
+        <path class="ln" d="M111 62 L111 68" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="85" text-anchor="end">2</text>
+        <rect class="step" x="36" y="68" width="150" height="26" rx="7"/><text class="stept" x="111" y="85" text-anchor="middle">rewrite</text>
+        <path class="ln" d="M111 94 L111 100" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="117" text-anchor="end">3</text>
+        <rect class="step" x="36" y="100" width="150" height="26" rx="7"/><text class="stept" x="111" y="117" text-anchor="middle">refactor</text>
+        <path class="ln" d="M111 126 L111 132" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="149" text-anchor="end">4</text>
+        <rect class="step" x="36" y="132" width="150" height="26" rx="7"/><text class="stept" x="111" y="149" text-anchor="middle">balance</text>
+        <path class="ln" d="M111 158 L111 164" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="181" text-anchor="end">5</text>
+        <rect class="step" x="36" y="164" width="150" height="26" rx="7"/><text class="stept" x="111" y="181" text-anchor="middle">rewrite</text>
+        <path class="ln" d="M111 190 L111 196" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="213" text-anchor="end">6</text>
+        <rect class="step" x="36" y="196" width="150" height="26" rx="7"/><text class="stept" x="111" y="213" text-anchor="middle">rewrite -z</text>
+        <path class="ln" d="M111 222 L111 228" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="245" text-anchor="end">7</text>
+        <rect class="step" x="36" y="228" width="150" height="26" rx="7"/><text class="stept" x="111" y="245" text-anchor="middle">balance</text>
+        <path class="ln" d="M111 254 L111 260" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="277" text-anchor="end">8</text>
+        <rect class="step" x="36" y="260" width="150" height="26" rx="7"/><text class="stept" x="111" y="277" text-anchor="middle">refactor -z</text>
+        <path class="ln" d="M111 286 L111 292" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="309" text-anchor="end">9</text>
+        <rect class="step" x="36" y="292" width="150" height="26" rx="7"/><text class="stept" x="111" y="309" text-anchor="middle">rewrite -z</text>
+        <path class="ln" d="M111 318 L111 324" style="stroke-width:1.3"/>
+        <text class="sub" x="26" y="341" text-anchor="end">10</text>
+        <rect class="step" x="36" y="324" width="150" height="26" rx="7"/><text class="stept" x="111" y="341" text-anchor="middle">balance</text>
+        <text class="sub" x="250" y="20">...but it is only one of an enormous number of possible recipes:</text>
+        <!-- faded alternatives, also top to bottom -->
+        <rect class="stepf" x="250" y="36" width="96" height="26" rx="7"/><text class="stepft" x="298" y="53" text-anchor="middle">rewrite</text>
+        <rect class="stepf" x="250" y="68" width="96" height="26" rx="7"/><text class="stepft" x="298" y="85" text-anchor="middle">resub</text>
+        <rect class="stepf" x="250" y="100" width="96" height="26" rx="7"/><text class="stepft" x="298" y="117" text-anchor="middle">balance</text>
+        <rect class="stepf" x="250" y="132" width="96" height="26" rx="7"/><text class="stepft" x="298" y="149" text-anchor="middle">refactor</text>
+        <rect class="stepf" x="250" y="164" width="96" height="26" rx="7"/><text class="stepft" x="298" y="181" text-anchor="middle">rewrite -z</text>
+        <rect class="stepf" x="250" y="196" width="96" height="26" rx="7"/><text class="stepft" x="298" y="213" text-anchor="middle">balance</text>
+        <rect class="stepf" x="250" y="228" width="96" height="26" rx="7"/><text class="stepft" x="298" y="245" text-anchor="middle">&#8230;</text>
+        <rect class="stepf" x="360" y="36" width="96" height="26" rx="7"/><text class="stepft" x="408" y="53" text-anchor="middle">refactor</text>
+        <rect class="stepf" x="360" y="68" width="96" height="26" rx="7"/><text class="stepft" x="408" y="85" text-anchor="middle">balance</text>
+        <rect class="stepf" x="360" y="100" width="96" height="26" rx="7"/><text class="stepft" x="408" y="117" text-anchor="middle">rewrite</text>
+        <rect class="stepf" x="360" y="132" width="96" height="26" rx="7"/><text class="stepft" x="408" y="149" text-anchor="middle">resub</text>
+        <rect class="stepf" x="360" y="164" width="96" height="26" rx="7"/><text class="stepft" x="408" y="181" text-anchor="middle">resub -z</text>
+        <rect class="stepf" x="360" y="196" width="96" height="26" rx="7"/><text class="stepft" x="408" y="213" text-anchor="middle">&#8230;</text>
+        <rect class="stepf" x="470" y="36" width="96" height="26" rx="7"/><text class="stepft" x="518" y="53" text-anchor="middle">balance</text>
+        <rect class="stepf" x="470" y="68" width="96" height="26" rx="7"/><text class="stepft" x="518" y="85" text-anchor="middle">refactor -z</text>
+        <rect class="stepf" x="470" y="100" width="96" height="26" rx="7"/><text class="stepft" x="518" y="117" text-anchor="middle">rewrite</text>
+        <rect class="stepf" x="470" y="132" width="96" height="26" rx="7"/><text class="stepft" x="518" y="149" text-anchor="middle">balance</text>
+        <rect class="stepf" x="470" y="164" width="96" height="26" rx="7"/><text class="stepft" x="518" y="181" text-anchor="middle">resub</text>
+        <rect class="stepf" x="470" y="196" width="96" height="26" rx="7"/><text class="stepft" x="518" y="213" text-anchor="middle">rewrite</text>
+        <rect class="stepf" x="470" y="228" width="96" height="26" rx="7"/><text class="stepft" x="518" y="245" text-anchor="middle">&#8230;</text>
+        <rect class="stepf" x="580" y="36" width="96" height="26" rx="7"/><text class="stepft" x="628" y="53" text-anchor="middle">resub</text>
+        <rect class="stepf" x="580" y="68" width="96" height="26" rx="7"/><text class="stepft" x="628" y="85" text-anchor="middle">rewrite -z</text>
+        <rect class="stepf" x="580" y="100" width="96" height="26" rx="7"/><text class="stepft" x="628" y="117" text-anchor="middle">balance</text>
+        <rect class="stepf" x="580" y="132" width="96" height="26" rx="7"/><text class="stepft" x="628" y="149" text-anchor="middle">refactor</text>
+        <rect class="stepf" x="580" y="164" width="96" height="26" rx="7"/><text class="stepft" x="628" y="181" text-anchor="middle">&#8230;</text>
+        <text class="kl" x="700" y="60" style="font-size:12px">Over 280 million</text>
+        <text class="kl" x="700" y="76" style="font-size:12px">10-step recipes</text>
+        <text class="kl" x="700" y="92" style="font-size:12px">from 7 transforms.</text>
+        <text class="kl" x="700" y="120" style="font-size:12px">Is resyn2 the</text>
+        <text class="kl" x="700" y="136" style="font-size:12px">best one for</text>
+        <text class="kl" x="700" y="152" style="font-size:12px">your design?</text>
+        <!-- what each transform does -->
+        <text class="tt" x="250" y="290" style="font-size:12px">What the transforms do</text>
+        <text class="sub" x="250" y="308"><tspan style="font-weight:700">balance</tspan>: make the logic shallower, so signals arrive sooner</text>
+        <text class="sub" x="250" y="324"><tspan style="font-weight:700">rewrite</tspan>: replace small pieces of logic with fewer gates</text>
+        <text class="sub" x="250" y="340"><tspan style="font-weight:700">refactor</tspan>: the same idea over larger pieces; <tspan style="font-weight:700">resub</tspan>: reuse signals that already exist</text>
+        <text class="sub" x="250" y="356"><tspan style="font-weight:700">-z</tspan>: also accept changes that do not shrink anything, to escape dead ends</text>
+      </svg>
+      <div class="cap">A recipe is a sequence drawn from a small set of transforms. resyn2 is one fixed ordering; the number of possible orderings is astronomical. That space is what this project searches.</div>
+    </div>
+  </section>
+
+  <!-- 2b. what came before: the machine-learning studies on a shortcut score -->
+  <section id="first">
+    <p class="q">3 &middot; First attempt</p>
+    <h2>Machine learning optimized the wrong score</h2>
+    <p class="takeaway"><span>Takeaway</span>Machine learning models trained on gate count got better at gate count, but on a real chip that shortcut did not hold up.</p>
+    <p class="lead muted">I started with machine learning: train models to choose and judge recipes. Training needs thousands of scored attempts and a real chip layout takes minutes to an hour, so I scored recipes with a shortcut: gate count, which takes milliseconds.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">A reinforcement learning agent</h3>
+    <p style="margin-top:4px">Reinforcement learning trains an agent by trial and error. Here, each attempt builds one recipe, one step at a time. At each step the agent sees a short summary of the logic: how big and how deep it started, how much of that is left, how far into the recipe it is, and which transform it picked last. It picks one of the 7 transforms, the optimizer applies it, and the agent is rewarded by the share of gates that step removed. After 12 steps the recipe is done, and over thousands of attempts the agent shifts toward the choices that paid off.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 376" role="img" aria-label="One step of the agent. It sees the design's starting gate count, depth, inputs, outputs and registers; its progress so far as share of gates left, share of depth left and step number; and which transform it picked last. It picks one of 7 transforms. The optimizer applies it, and the reward is the gates that step removed divided by the starting gate count.">
+        <text class="tt" x="430" y="18" text-anchor="middle">One step of the agent (12 steps make one recipe)</text>
+
+        <!-- what it sees -->
+        <rect class="bx" x="6" y="36" width="294" height="266" rx="10"/>
+        <text class="tt" x="22" y="60">What it sees</text>
+        <text class="tt" x="22" y="84" style="font-size:11.5px; fill:var(--accent)">The design (fixed)</text>
+        <text class="sub" x="26" y="100">&#8226;&#160; starting gate count</text>
+        <text class="sub" x="26" y="115">&#8226;&#160; starting depth</text>
+        <text class="sub" x="26" y="130">&#8226;&#160; inputs</text>
+        <text class="sub" x="26" y="145">&#8226;&#160; outputs</text>
+        <text class="sub" x="26" y="160">&#8226;&#160; registers</text>
+        <text class="tt" x="22" y="186" style="font-size:11.5px; fill:var(--accent)">Progress so far</text>
+        <text class="sub" x="26" y="202">&#8226;&#160; share of gates left</text>
+        <text class="sub" x="26" y="217">&#8226;&#160; share of depth left</text>
+        <text class="sub" x="26" y="232">&#8226;&#160; step number, out of 12</text>
+        <text class="tt" x="22" y="258" style="font-size:11.5px; fill:var(--accent)">Its last pick</text>
+        <text class="sub" x="22" y="274">which of the 7 transforms it was</text>
+        <text class="sub" x="22" y="289">(7 on/off flags)</text>
+
+        <!-- the agent -->
+        <path class="ln" d="M300 168 L332 168" marker-end="url(#ar)"/>
+        <rect class="bx key" x="336" y="136" width="164" height="64" rx="10"/>
+        <text class="tt" x="418" y="164" text-anchor="middle">The agent</text>
+        <text class="sub" x="418" y="181" text-anchor="middle">a small neural network</text>
+        <path class="lna" d="M500 168 L532 168" marker-end="url(#ara)"/>
+
+        <!-- what it can do -->
+        <rect class="bx" x="536" y="36" width="318" height="266" rx="10"/>
+        <text class="tt" x="552" y="60">What it can do: pick 1 of 7</text>
+        <rect class="step" x="552" y="82" width="108" height="21" rx="6"/><text class="stept" x="606" y="97" text-anchor="middle">balance</text>
+        <text class="sub" x="670" y="97">make the logic shallower</text>
+        <rect class="step" x="552" y="107" width="108" height="21" rx="6"/><text class="stept" x="606" y="122" text-anchor="middle">rewrite</text>
+        <text class="sub" x="670" y="122">fewer gates, small pieces</text>
+        <rect class="step" x="552" y="132" width="108" height="21" rx="6"/><text class="stept" x="606" y="147" text-anchor="middle">rewrite -z</text>
+        <text class="sub" x="670" y="147">also takes zero-gain moves</text>
+        <rect class="step" x="552" y="157" width="108" height="21" rx="6"/><text class="stept" x="606" y="172" text-anchor="middle">refactor</text>
+        <text class="sub" x="670" y="172">fewer gates, larger pieces</text>
+        <rect class="step" x="552" y="182" width="108" height="21" rx="6"/><text class="stept" x="606" y="197" text-anchor="middle">refactor -z</text>
+        <text class="sub" x="670" y="197">also takes zero-gain moves</text>
+        <rect class="step" x="552" y="207" width="108" height="21" rx="6"/><text class="stept" x="606" y="222" text-anchor="middle">resub</text>
+        <text class="sub" x="670" y="222">reuse existing signals</text>
+        <rect class="step" x="552" y="232" width="108" height="21" rx="6"/><text class="stept" x="606" y="247" text-anchor="middle">resub -z</text>
+        <text class="sub" x="670" y="247">also takes zero-gain moves</text>
+
+        <!-- the step is applied and scored, then the numbers update -->
+        <path class="ln" d="M695 302 L695 316 L153 316 L153 308" marker-end="url(#ar)"/>
+        <text class="sub" x="424" y="336" text-anchor="middle" style="font-weight:700">The optimizer applies the pick. Reward = gates this step removed &#247; starting gate count.</text>
+        <text class="sub" x="424" y="352" text-anchor="middle">Then the numbers update and the next step begins.</text>
+        <text class="sub" x="430" y="370" text-anchor="middle">Training ran 4,180 recipes (episodes) on gcd and uart.</text>
+      </svg>
+    </div>
+    <p>I trained it with PPO (Proximal Policy Optimization, a standard reinforcement learning method) from <a href="https://github.com/DLR-RM/stable-baselines3">Stable-Baselines3</a>, on two small designs, gcd and uart. On gcd it settled into a repeating three-step pattern (refactor, rewrite -z, resub). Its recipes removed about 2% more gates than resyn2, on both training designs and on aes, a design it had never seen. To check whether the learning was actually helping, I compared it with no learning at all: 60 random recipes per design. The best random recipe removed more gates than the agent&rsquo;s on all three, so on gate count, training had not taught it anything random sampling could not find.</p>
+    <p>Then I laid out three recipes for each design on a real chip: resyn2, the agent&rsquo;s, and the random recipe with the fewest gates. The gate count stopped telling the story:</p>
+    <div class="vs-wrap">
+      <table class="vs">
+        <thead><tr><th>Lower is better</th><th>resyn2</th><th>The agent</th><th>Best of 60 random</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="4">gcd</td></tr>
+          <tr><td>Gate count (the shortcut)</td><td class="w">357 <span class="pill warn">worst</span></td><td>350</td><td class="b">349 <span class="pill">best</span></td></tr>
+          <tr><td>Real chip area (square micrometers)</td><td class="b">59.5 <span class="pill">best</span></td><td class="w">64.1 <span class="pill warn">worst</span></td><td>63.3</td></tr>
+          <tr><td>Timing: picoseconds late</td><td class="w">20.8 <span class="pill warn">worst</span></td><td class="b">3.6 <span class="pill">best</span></td><td>10.1</td></tr>
+          <tr class="grp"><td colspan="4">uart</td></tr>
+          <tr><td>Gate count (the shortcut)</td><td class="w">700 <span class="pill warn">worst</span></td><td>687</td><td class="b">669 <span class="pill">best</span></td></tr>
+          <tr><td>Real chip area (square micrometers)</td><td class="w">115.1 <span class="pill warn">worst</span></td><td class="b">109.6 <span class="pill">best</span></td><td>112.3</td></tr>
+          <tr><td>Timing: picoseconds late</td><td class="b">24.1 <span class="pill">best</span></td><td>32.2</td><td class="w">38.8 <span class="pill warn">worst</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">The shortcut said the agent beat resyn2 on both designs, and that the random recipe beat them both. The real chip disagreed. The gate-count winner, the random recipe, was not best on anything that matters. The agent gave a different trade on each design: gcd got bigger but faster, uart smaller but slower. Gate count cannot see that trade. Both were measured before the <a href="#matched">matched-timing clocks</a> existed, at clocks where even resyn2 missed timing, so this is a warning sign rather than a proof.</p>
+    <p class="summary"><strong>Summary.</strong> The agent learned to optimize the gate-count shortcut, yet an untrained random baseline optimized it more effectively, and gains on the shortcut did not carry over to the full chip layout. The study therefore exposed two limitations. The objective was a poor stand-in for physical quality, and the agent&rsquo;s view of the logic, a handful of summary statistics, was too coarse to support informed choices. The two studies that follow address the second limitation while keeping the gate-count objective.</p>
+
+    <h3 style="margin:30px 0 4px; font-size:1.08rem">A graph neural network that reads the logic graph</h3>
+    <p style="margin-top:4px">The agent only ever saw a few numbers about the logic, never the logic itself. A graph neural network can read it directly: every gate is a node, every wire is an edge, and the network learns from the pattern of connections. I trained one to answer a narrower question: <strong>given a graph, how much would resyn2 still shrink it?</strong></p>
+    <p>My first version answered that question in gate counts: given a graph, predict how many gates it would have after resyn2. To tell whether the network was learning anything, I compared it with the simplest possible rule: predict the final count from the graph&rsquo;s current size alone. That rule was very hard to beat. On these real designs resyn2 removes only about 1 to 3% of the gates, so a graph&rsquo;s size alone predicts its final count to within about 2%. The network, trained on just four designs, memorized them instead of learning anything general. Tested on a fifth design it had never seen (jpeg), its predictions were typically off by a factor of about 5, while the simple rule was off by under 3%.</p>
+    <p>So I changed the question to one that size cannot answer: what <em>share</em> of the graph would resyn2 remove? I also built 8 small test designs with very different structures (deep arithmetic, wide multiplexers, long comparison chains and more), each at 3 sizes. Now structure mattered, with the share ranging from 0% to 47%, and the network had something real to learn. Here are both versions side by side:</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 614" role="img" aria-label="One model, the graph neural network, tested against a simple baseline in two versions. Version 1 predicted the gate count left after resyn2, against a rule using size alone: on trained designs the model missed by 5.7 percent versus 1.8 for the rule; on the unseen jpeg design it was off by a factor of about 5 versus 2.6 percent. Version 2 predicted the share of gates removed, against always guessing the training average: 0.6 versus 5.7 points, 1.1 versus 5.3, and 13.1 versus 2.1 on an unseen structure type.">
+        <text class="tt" x="8" y="18">One model, measured against a simple baseline</text>
+        <text class="sub" x="8" y="34">The model is the graph neural network. The baseline is a deliberately simple rule it has to beat. Shorter bars are better.</text>
+        <text class="tt" x="8" y="70" style="fill:var(--accent)">Version 1: how many gates will be left after resyn2?</text>
+        <text class="sub" x="8" y="86">Baseline: a rule that uses only the graph&rsquo;s size. Bars show the typical miss, in percent of the true count.</text>
+        <text class="tt" x="8" y="116">Designs it trained on</text>
+        <text class="tt" x="852" y="116" text-anchor="end" style="fill:var(--warn)">the rule wins</text>
+        <text class="sub" x="8" y="131">new graphs from those same designs</text>
+        <text class="sub" x="160" y="152" text-anchor="end" style="font-weight:700">The model</text>
+        <rect x="168" y="140" width="251" height="16" rx="3" fill="var(--warn)"/>
+        <text class="sub" x="425" y="152" style="fill:var(--warn); font-weight:700">5.7% off</text>
+        <text class="sub" x="160" y="172" text-anchor="end">Size-only rule</text>
+        <rect x="168" y="160" width="79" height="16" rx="3" fill="var(--faint)" opacity=".75"/>
+        <text class="sub" x="253" y="172">1.8% off</text>
+        <text class="tt" x="8" y="204">A design it never saw</text>
+        <text class="tt" x="852" y="204" text-anchor="end" style="fill:var(--warn)">the rule wins</text>
+        <text class="sub" x="8" y="219">jpeg, after training on four other real designs</text>
+        <text class="sub" x="160" y="240" text-anchor="end" style="font-weight:700">The model</text>
+        <rect x="168" y="228" width="620" height="16" rx="3" fill="var(--warn)"/>
+        <path d="M762 225 L756 247 M770 225 L764 247" stroke="var(--surface)" stroke-width="4" fill="none"/>
+        <text class="sub" x="748" y="240" text-anchor="end" style="fill:#fff; font-weight:700">off by a factor of about 5</text>
+        <text class="sub" x="160" y="260" text-anchor="end">Size-only rule</text>
+        <rect x="168" y="248" width="114" height="16" rx="3" fill="var(--faint)" opacity=".75"/>
+        <text class="sub" x="288" y="260">2.6% off</text>
+        <path d="M8 290 L852 290" stroke="var(--border)" stroke-width="1.2"/>
+        <text class="tt" x="8" y="316" style="fill:var(--accent)">Version 2: what share of the gates will resyn2 remove?</text>
+        <text class="sub" x="8" y="332">Baseline: always guess the average share from training. Bars show the average miss, in percentage points.</text>
+        <text class="tt" x="8" y="362">Designs it trained on</text>
+        <text class="tt" x="852" y="362" text-anchor="end" style="fill:var(--win)">9 times more accurate</text>
+        <text class="sub" x="8" y="377">new graphs from those same designs</text>
+        <text class="sub" x="160" y="398" text-anchor="end" style="font-weight:700">The model</text>
+        <rect x="168" y="386" width="28" height="16" rx="3" fill="var(--win)"/>
+        <text class="sub" x="202" y="398" style="fill:var(--win); font-weight:700">0.6 points</text>
+        <text class="sub" x="160" y="418" text-anchor="end">Guessing the average</text>
+        <rect x="168" y="406" width="251" height="16" rx="3" fill="var(--faint)" opacity=".75"/>
+        <text class="sub" x="425" y="418">5.7 points</text>
+        <text class="tt" x="8" y="450">Bigger versions of those designs</text>
+        <text class="tt" x="852" y="450" text-anchor="end" style="fill:var(--win)">4.7 times more accurate</text>
+        <text class="sub" x="8" y="465">trained only on the smaller sizes</text>
+        <text class="sub" x="160" y="486" text-anchor="end" style="font-weight:700">The model</text>
+        <rect x="168" y="474" width="50" height="16" rx="3" fill="var(--win)"/>
+        <text class="sub" x="224" y="486" style="fill:var(--win); font-weight:700">1.1 points</text>
+        <text class="sub" x="160" y="506" text-anchor="end">Guessing the average</text>
+        <rect x="168" y="494" width="233" height="16" rx="3" fill="var(--faint)" opacity=".75"/>
+        <text class="sub" x="407" y="506">5.3 points</text>
+        <text class="tt" x="8" y="538">A structure type it never saw</text>
+        <text class="tt" x="852" y="538" text-anchor="end" style="fill:var(--warn)">6 times less accurate</text>
+        <text class="sub" x="8" y="553">the comparison chain, left out of training entirely</text>
+        <text class="sub" x="160" y="574" text-anchor="end" style="font-weight:700">The model</text>
+        <rect x="168" y="562" width="576" height="16" rx="3" fill="var(--warn)"/>
+        <text class="sub" x="750" y="574" style="fill:var(--warn); font-weight:700">13.1 points</text>
+        <text class="sub" x="160" y="594" text-anchor="end">Guessing the average</text>
+        <rect x="168" y="582" width="92" height="16" rx="3" fill="var(--faint)" opacity=".75"/>
+        <text class="sub" x="266" y="594">2.1 points</text>
+      </svg>
+      <div class="cap">There is one model in both versions; the baseline changed with the question. Size alone predicts a count well but says nothing about a share, so version 2 is measured against guessing the average instead. Across these test designs, resyn2 removes between 0% and 47% of the gates. Version 1&rsquo;s errors are converted from the study&rsquo;s log-scale figures into a typical percentage miss.</div>
+    </div>
+    <p class="summary"><strong>Summary.</strong> The graph model shows that a circuit&rsquo;s structure carries real, learnable information about how far it can be optimized. Once the question changed from a gate count, which size alone predicts, to a share, which size cannot predict, the model beat the baseline by a wide margin and kept that advantage on larger versions of familiar designs. Its failure on an unseen structure type marks the limit: the model generalizes across scale, not across kinds of logic, so it needs training data that covers the structures it will meet. A reliable judge of graphs raised the next question: <strong>could it also choose the steps?</strong></p>
+
+    <h3 style="margin:30px 0 4px; font-size:1.08rem">Letting that model choose the steps</h3>
+    <p style="margin-top:4px">A model that judges graphs well could, in principle, choose the steps: at each step, try all 7 transforms, ask the model how good each resulting graph is, keep the best, and repeat. To check whether the model added anything, I ran the same loop with a plain scorer that simply counts the gates of each result.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 392" role="img" aria-label="Illustration with made-up numbers. From a graph of 1,022 gates, both pickers try the same 7 transforms. The plain picker scores each by the gates it actually leaves and keeps refactor, which brings the graph down to 985 gates. The model picker scores each by the final count the model expects, which is 900 to 903 for every option, and keeps balance, which leaves the graph at 1,022 gates.">
+        <text class="tt" x="8" y="18">One step, two pickers</text>
+        <text class="sub" x="8" y="34">an illustration with made-up numbers</text>
+        <rect class="bx" x="345" y="14" width="170" height="48" rx="9"/>
+        <text class="tt" x="430" y="35" text-anchor="middle">Current graph</text>
+        <text class="sub" x="430" y="52" text-anchor="middle">1,022 gates</text>
+        <path class="ln" d="M400 62 C400 84, 228 80, 228 100" marker-end="url(#ar)"/>
+        <path class="ln" d="M460 62 C460 84, 632 80, 632 100" marker-end="url(#ar)"/>
+        <rect class="bx" x="40" y="104" width="375" height="276" rx="10"/>
+        <text class="tt" x="56" y="128" style="fill:var(--win)">Plain picker</text>
+        <text class="sub" x="56" y="144">scores each option by the gates it actually leaves</text>
+        <rect class="step" x="58" y="160" width="110" height="20" rx="6"/><text class="stept" x="113" y="174" text-anchor="middle">balance</text>
+        <text class="tt" x="240" y="175" text-anchor="middle" style="font-size:12px">1,022</text>
+        <rect class="step" x="58" y="186" width="110" height="20" rx="6"/><text class="stept" x="113" y="200" text-anchor="middle">rewrite</text>
+        <text class="tt" x="240" y="201" text-anchor="middle" style="font-size:12px">990</text>
+        <rect class="step" x="58" y="212" width="110" height="20" rx="6"/><text class="stept" x="113" y="226" text-anchor="middle">rewrite -z</text>
+        <text class="tt" x="240" y="227" text-anchor="middle" style="font-size:12px">1,022</text>
+        <rect x="48" y="235" width="359" height="26" rx="6" fill="color-mix(in srgb,var(--win) 14%,transparent)" stroke="var(--win)" stroke-width="1.5"/>
+        <rect class="step" x="58" y="238" width="110" height="20" rx="6"/><text class="stept" x="113" y="252" text-anchor="middle">refactor</text>
+        <text class="tt" x="240" y="253" text-anchor="middle" style="font-size:12px; fill:var(--win)">985</text>
+        <text class="tt" x="395" y="253" text-anchor="end" style="font-size:11px; fill:var(--win)">&#8592; lowest score</text>
+        <rect class="step" x="58" y="264" width="110" height="20" rx="6"/><text class="stept" x="113" y="278" text-anchor="middle">refactor -z</text>
+        <text class="tt" x="240" y="279" text-anchor="middle" style="font-size:12px">1,018</text>
+        <rect class="step" x="58" y="290" width="110" height="20" rx="6"/><text class="stept" x="113" y="304" text-anchor="middle">resub</text>
+        <text class="tt" x="240" y="305" text-anchor="middle" style="font-size:12px">1,001</text>
+        <rect class="step" x="58" y="316" width="110" height="20" rx="6"/><text class="stept" x="113" y="330" text-anchor="middle">resub -z</text>
+        <text class="tt" x="240" y="331" text-anchor="middle" style="font-size:12px">1,022</text>
+        <text class="tt" x="56" y="356" style="fill:var(--win)">Keeps refactor: down to 985 gates</text>
+        <text class="sub" x="56" y="372">the scores differ clearly, so the real best stands out</text>
+        <rect class="bx" x="445" y="104" width="375" height="276" rx="10"/>
+        <text class="tt" x="461" y="128" style="fill:var(--warn)">Model-guided picker</text>
+        <text class="sub" x="461" y="144">scores each option by the final count the model expects</text>
+        <rect x="453" y="157" width="359" height="26" rx="6" fill="color-mix(in srgb,var(--warn) 14%,transparent)" stroke="var(--warn)" stroke-width="1.5"/>
+        <rect class="step" x="463" y="160" width="110" height="20" rx="6"/><text class="stept" x="518" y="174" text-anchor="middle">balance</text>
+        <text class="tt" x="645" y="175" text-anchor="middle" style="font-size:12px; fill:var(--warn)">900</text>
+        <text class="tt" x="800" y="175" text-anchor="end" style="font-size:11px; fill:var(--warn)">&#8592; lowest score</text>
+        <rect class="step" x="463" y="186" width="110" height="20" rx="6"/><text class="stept" x="518" y="200" text-anchor="middle">rewrite</text>
+        <text class="tt" x="645" y="201" text-anchor="middle" style="font-size:12px">902</text>
+        <rect class="step" x="463" y="212" width="110" height="20" rx="6"/><text class="stept" x="518" y="226" text-anchor="middle">rewrite -z</text>
+        <text class="tt" x="645" y="227" text-anchor="middle" style="font-size:12px">901</text>
+        <rect class="step" x="463" y="238" width="110" height="20" rx="6"/><text class="stept" x="518" y="252" text-anchor="middle">refactor</text>
+        <text class="tt" x="645" y="253" text-anchor="middle" style="font-size:12px">903</text>
+        <rect class="step" x="463" y="264" width="110" height="20" rx="6"/><text class="stept" x="518" y="278" text-anchor="middle">refactor -z</text>
+        <text class="tt" x="645" y="279" text-anchor="middle" style="font-size:12px">901</text>
+        <rect class="step" x="463" y="290" width="110" height="20" rx="6"/><text class="stept" x="518" y="304" text-anchor="middle">resub</text>
+        <text class="tt" x="645" y="305" text-anchor="middle" style="font-size:12px">902</text>
+        <rect class="step" x="463" y="316" width="110" height="20" rx="6"/><text class="stept" x="518" y="330" text-anchor="middle">resub -z</text>
+        <text class="tt" x="645" y="331" text-anchor="middle" style="font-size:12px">901</text>
+        <text class="tt" x="461" y="356" style="fill:var(--warn)">Keeps balance: still 1,022 gates</text>
+        <text class="sub" x="461" y="372">the scores are almost identical, so the pick is arbitrary</text>
+      </svg>
+      <div class="cap">The model predicts where each graph could end up, and nearly every option ends up in about the same place, so its scores barely differ. Its lowest score lands on a step that changed nothing. The measured counts show which step actually made progress.</div>
+    </div>
+    <p style="margin-top:16px">The model-guided picker failed, and the reason is subtle. The model predicts where a graph can <em>end up</em>, and every graph along the way to that end looks about the same to it. Its scores for the 7 options barely differ, so it cannot tell a real step forward from a step that did nothing, and it often keeps the one that did nothing.</p>
+    <p>Here are both pickers against resyn2 on the eight test designs:</p>
+    <div class="vs-wrap">
+      <table class="vs">
+        <thead><tr><th>Gates after the recipe (lower is better)</th><th>resyn2</th><th>Plain picker</th><th>Model-guided picker</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="4">Designs with room to improve</td></tr>
+          <tr><td>Adder chain</td><td>2,847</td><td class="b">2,714 <span class="pill">best</span></td><td class="w">3,130 <span class="pill warn">worst</span></td></tr>
+          <tr><td>Comparison tree</td><td class="w">3,090 <span class="pill warn">worst</span></td><td class="b">3,055 <span class="pill">best</span></td><td>3,056</td></tr>
+          <tr><td>Multiplier</td><td>2,596</td><td class="b">2,595 <span class="pill">best</span></td><td class="w">2,604 <span class="pill warn">worst</span></td></tr>
+          <tr><td>Decoder</td><td class="b">1,022 <span class="pill">best</span></td><td class="b">1,022 <span class="pill">best</span></td><td class="w">1,532 (stuck) <span class="pill warn">worst</span></td></tr>
+          <tr><td>Shift register with feedback</td><td class="b">73 <span class="pill">best</span></td><td class="b">73 <span class="pill">best</span></td><td class="w">136 (stuck) <span class="pill warn">worst</span></td></tr>
+          <tr class="grp"><td colspan="4">Already as small as they get: every method ties</td></tr>
+          <tr><td>Multiplexer tree</td><td>6,096</td><td>6,096</td><td>6,096</td></tr>
+          <tr><td>Crossbar switch</td><td>5,760</td><td>5,760</td><td>5,760</td></tr>
+          <tr><td>Exclusive-or tree</td><td>4,512</td><td>4,512</td><td>4,512</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap" style="margin-top:9px">The eight test designs are the largest size of each structure type, which the model had not trained on.</p>
+    <p style="margin-top:14px">The model-guided picker got stuck on two designs, the decoder and the shift register, repeating a step that changed nothing, and finished worse than resyn2 on four of the eight. The plain picker matched or beat resyn2 on all eight, by up to 4.7% on the adder chain. Three designs were already as small as they get, so every method tied.</p>
+    <p class="summary"><strong>Summary.</strong> Judging a graph and choosing a step are different tasks. The model was a good judge of where a graph could end up, but it gave no signal about which step makes progress now, while a direct measurement did. When a measurement is this cheap, it beats a prediction. <strong>A learned model earns its place only where measuring each option is too expensive</strong>, such as a full chip layout.</p>
+
+    <h3 style="margin:30px 0 0; font-size:1.08rem">Three lessons that shaped the rest of the project</h3>
+    <ol class="took">
+      <li><strong>Grade on the real chip.</strong> The recipe with the fewest gates won nothing on the real chip, and the agent&rsquo;s gate-count gains became a different trade between area and timing on each design. So from <a href="#second">section 4</a> on, every result is confirmed by a full layout.</li>
+      <li><strong>Measure before you predict.</strong> The plain picker, which measured every option, beat the model-guided picker on every design with room to improve. So the cheap score that later made the search affordable (<a href="#cost">section 5</a>) is a direct measurement, not a learned model.</li>
+      <li><strong>Win one design at a time first.</strong> The graph model worked only on structures it had trained on, and a handful of real designs could not cover the structures a new design might contain. So the next question was narrower: graded on the real chip, can resyn2 be beaten at all, one design at a time?</li>
+    </ol>
+  </section>
+
+  <!-- 3. searching for a better recipe (the centerpiece) -->
+  <section id="second">
+    <p class="q">4 &middot; Second attempt</p>
+    <h2>One design at a time: a better recipe for 5 of 9</h2>
+    <p class="takeaway"><span>Takeaway</span>Graded on full layouts at matched timing, a sample of 25 random recipes beat resyn2 on 5 of 9 designs, with up to 5.8% less area.</p>
+    <p class="lead muted">So I set machine learning aside and asked a simpler question of each design: does a better recipe than resyn2 exist at all? I drew 25 recipes at random from the space of possible recipes and graded every one on a full chip layout through sign-off, not on gate count. For each design, the best recipe is simply the one with the smallest area that still meets timing.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 860 108" role="img" aria-label="Search many candidate recipes, grade each one on a real chip layout, and keep the best recipe for that design.">
+        <rect class="bx" x="6" y="36" width="196" height="44" rx="9"/>
+        <text class="tt" x="104" y="58" text-anchor="middle">a sample of recipes</text>
+        <text class="sub" x="104" y="73" text-anchor="middle">from the huge space</text>
+
+        <path class="ln" d="M202 58 L300 58" marker-end="url(#ar)"/>
+        <text class="sub" x="251" y="48" text-anchor="middle">grade each on</text>
+        <text class="sub" x="251" y="94" text-anchor="middle">a real chip</text>
+
+        <rect class="bx" x="304" y="36" width="236" height="44" rx="9"/>
+        <text class="tt" x="422" y="58" text-anchor="middle">full layout to sign-off</text>
+        <text class="sub" x="422" y="73" text-anchor="middle">real area and timing</text>
+
+        <path class="lna" d="M540 58 L626 58" marker-end="url(#ara)"/>
+        <rect class="bx key" x="630" y="36" width="224" height="44" rx="9"/>
+        <text class="tt" x="742" y="58" text-anchor="middle">the best recipe</text>
+        <text class="sub" x="742" y="73" text-anchor="middle">for this design</text>
+      </svg>
+      <div class="cap">The method: search the recipe space, grade each candidate on a real layout, keep the winner for that design.</div>
+    </div>
+
+    <h3 id="matched" style="margin:28px 0 4px; font-size:1.08rem">Keeping the comparison fair: matched timing</h3>
+    <p style="margin-top:4px">A slower clock lets the tools build a smaller chip, so area alone can be gamed. Every recipe on a design therefore runs at one clock: resyn2&rsquo;s speed limit, the fastest clock at which it still meets timing. A recipe wins only if it also meets timing there and uses less area. Leaving headroom does not help, because with a looser clock the tools stop working as hard and use it up. On aes (an encryption core), loosening the clock from 388 to 430 picoseconds made resyn2 <em>miss</em> timing it had met.</p>
+
+    <p style="margin-top:18px">Graded this way, the best of 25 random recipes beats resyn2 on 5 of 9 designs, with up to 5.8% less area.</p>
+
+    <figure>
+      <img src="results_goal1.png" alt="Per-design area change versus resyn2 at matched timing. Five designs are smaller, in blue, up to 5.8 percent; resyn2 already wins on the other four.">
+      <figcaption>Each design's best searched recipe versus resyn2. Blue bars are wins (smaller area, up to 5.8%); on the rest, resyn2 is already hard to beat by chance.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 4. making it practical: two problems -->
+  <section id="cost">
+    <p class="q">5 &middot; The cost</p>
+    <h2>A quick estimate cuts the layouts from 26 to 3</h2>
+    <p class="takeaway"><span>Takeaway</span>Post-synthesis area takes seconds to measure and ranks recipes well enough that laying out only the top 3 of 26 captures 89% of the available gain.</p>
+    <p class="lead muted">A single win is one thing; a method you would actually use is another. A full layout takes from a minute to an hour, so grading all 26 candidates per design (the 25 random recipes plus resyn2) on a real chip is expensive: close to a day of compute for the largest design. There are three ways to score a recipe, and only one is both fast and reliable.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 860 202" role="img" aria-label="Three ways to compute a recipe's score: counting gates is cheap but rough, a full place and route is the truth but slow, and this project predicts the score from a cheap signal, both fast and accurate. All three produce the recipe's score.">
+        <!-- recipe -->
+        <rect class="bx" x="6" y="78" width="104" height="46" rx="9"/>
+        <text class="tt" x="58" y="105" text-anchor="middle">a recipe</text>
+
+        <!-- recipe -> three methods -->
+        <path class="lnw" d="M110 92 C 170 68, 192 40, 244 40" marker-end="url(#arw)"/>
+        <path class="ln" d="M110 101 L244 101" marker-end="url(#ar)"/>
+        <path class="lna" d="M110 110 C 170 134, 192 162, 244 162" marker-end="url(#ara)"/>
+
+        <!-- method 1 -->
+        <rect class="bx" x="248" y="14" width="392" height="52" rx="10"/>
+        <text class="tt" x="266" y="37" style="fill:var(--warn)">1 &middot; Count the logic gates</text>
+        <text class="sub" x="266" y="55">abstract gates: fastest (milliseconds), but can mislead</text>
+        <!-- method 2 -->
+        <rect class="bx" x="248" y="75" width="392" height="52" rx="10"/>
+        <text class="tt" x="266" y="98">2 &middot; Full place &amp; route</text>
+        <text class="sub" x="266" y="116">the real result, but up to an hour per recipe</text>
+        <!-- method 3 -->
+        <rect class="bx key" x="248" y="136" width="392" height="52" rx="10"/>
+        <text class="tt" x="266" y="159">3 &middot; Predict from post-synthesis area</text>
+        <text class="sub" x="266" y="177" style="fill:var(--win)">real cells: seconds, and tracks the result (this project)</text>
+
+        <!-- three methods -> the score -->
+        <path class="lnw" d="M640 40 C 670 40, 684 84, 698 95" marker-end="url(#arw)"/>
+        <path class="ln" d="M640 101 L698 101" marker-end="url(#ar)"/>
+        <path class="lna" d="M640 162 C 670 162, 684 118, 698 107" marker-end="url(#ara)"/>
+
+        <!-- the score -->
+        <rect class="bx" x="702" y="78" width="150" height="46" rx="9"/>
+        <text class="tt" x="777" y="97" text-anchor="middle">The score</text>
+        <text class="sub" x="777" y="113" text-anchor="middle">area, timing, power</text>
+      </svg>
+      <div class="cap">Three ways to score a recipe. The gate-count shortcut is the cheapest but can mislead; a full layout is the truth but far too slow for every candidate. The third path is the project's: measure the area of the real cells right after synthesis, which takes seconds and actually tracks the real result.</div>
+    </div>
+
+    <div class="diagram">
+      <svg viewBox="0 0 860 212" role="img" aria-label="A generic chip flow split into logic synthesis (optimize logic, map to cells) and physical design (placement, clock tree, routing, sign-off), showing where each scoring method reads its signal: gate count after logic optimization, post-synthesis area after mapping to cells, and the full score at sign-off.">
+        <!-- phase brackets -->
+        <path class="ln" d="M21 30 L21 24 L279 24 L279 30"/>
+        <text class="kl" x="150" y="17" text-anchor="middle">Logic synthesis: seconds</text>
+        <path class="ln" d="M301 30 L301 24 L839 24 L839 30"/>
+        <text class="kl" x="570" y="17" text-anchor="middle" style="fill:var(--muted)">Physical design: minutes to an hour</text>
+
+        <!-- generic stages -->
+        <rect class="bx" x="21" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="80" y="61" text-anchor="middle">Optimize logic</text>
+        <text class="sub" x="80" y="77" text-anchor="middle" style="fill:var(--accent)">the recipe runs here</text>
+
+        <rect class="bx" x="161" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="220" y="61" text-anchor="middle">Map to cells</text>
+        <text class="sub" x="220" y="77" text-anchor="middle">library cells, sized</text>
+
+        <rect class="bx" x="301" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="360" y="61" text-anchor="middle">Placement</text>
+        <text class="sub" x="360" y="77" text-anchor="middle">cells positioned</text>
+
+        <rect class="bx" x="441" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="500" y="61" text-anchor="middle">Clock tree</text>
+        <text class="sub" x="500" y="77" text-anchor="middle">clock distributed</text>
+
+        <rect class="bx" x="581" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="640" y="61" text-anchor="middle">Routing</text>
+        <text class="sub" x="640" y="77" text-anchor="middle">wires added</text>
+
+        <rect class="bx" x="721" y="40" width="118" height="50" rx="9"/>
+        <text class="tt" x="780" y="61" text-anchor="middle">Sign-off</text>
+        <text class="sub" x="780" y="77" text-anchor="middle">area, timing, power</text>
+
+        <path class="ln" d="M139 65 L157 65" marker-end="url(#ar)"/>
+        <path class="ln" d="M279 65 L297 65" marker-end="url(#ar)"/>
+        <path class="ln" d="M419 65 L437 65" marker-end="url(#ar)"/>
+        <path class="ln" d="M559 65 L577 65" marker-end="url(#ar)"/>
+        <path class="ln" d="M699 65 L717 65" marker-end="url(#ar)"/>
+
+        <!-- tap points: where each method reads its score -->
+        <path d="M80 90 L80 124" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="4 3" fill="none"/>
+        <circle cx="80" cy="90" r="4" fill="var(--warn)"/>
+        <path d="M220 90 L220 124" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="4 3" fill="none"/>
+        <circle cx="220" cy="90" r="4" fill="var(--accent)"/>
+        <path d="M780 90 L780 124" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="4 3" fill="none"/>
+        <circle cx="780" cy="90" r="4" fill="var(--muted)"/>
+
+        <rect class="bx" x="6" y="126" width="142" height="46" rx="9"/>
+        <text class="tt" x="77" y="145" text-anchor="middle" style="font-size:11.5px;fill:var(--warn)">1 &middot; Count logic gates</text>
+        <text class="sub" x="77" y="162" text-anchor="middle">abstract, in milliseconds</text>
+
+        <rect class="bx key" x="156" y="126" width="166" height="46" rx="9"/>
+        <text class="tt" x="239" y="145" text-anchor="middle" style="font-size:12px">3 &middot; Post-synthesis area</text>
+        <text class="sub" x="239" y="162" text-anchor="middle" style="fill:var(--win)">real cells, in seconds</text>
+
+        <rect class="bx" x="721" y="126" width="118" height="46" rx="9"/>
+        <text class="tt" x="780" y="145" text-anchor="middle" style="font-size:12px">2 &middot; Sign-off</text>
+        <text class="sub" x="780" y="162" text-anchor="middle">up to an hour</text>
+
+        <!-- cost / accuracy direction -->
+        <text class="sub" x="21" y="194">cheaper, rougher</text>
+        <text class="sub" x="839" y="194" text-anchor="end">costlier, truer</text>
+        <path class="ln" d="M21 202 L833 202" marker-end="url(#ar)"/>
+      </svg>
+      <div class="cap">All three ways read the same flow, just at different points. Counting gates reads it inside logic synthesis, right after optimization, while the logic is still abstract. Post-synthesis area reads it at the end of logic synthesis, once the logic is mapped to real library cells, and it still costs only seconds. The full score waits for the whole physical design flow (placement, clock tree, routing, sign-off): the truth, but up to an hour per recipe.</div>
+    </div>
+    <p style="margin-top:16px">Counting gates is the cheapest signal, but <a href="#first">section 3</a> showed it can point the wrong way. The signal used here costs a little more: the recipe&rsquo;s <span class="hl">post-synthesis cell area</span>, the total area of the real library cells once synthesis has mapped the logic onto them. It takes seconds instead of milliseconds, still far less than a layout, and it tracks the final area after layout closely, with a <span class="hl">rank correlation of 0.79</span>. So rank the candidates by that area, and pay for a full layout on only the most promising few.</p>
+    <figure>
+      <img src="results_goal2.png" alt="The skip-curve: routing only the top three of twenty-six synthesis-ranked recipes still captures 89 percent of the area improvement the full search would find.">
+      <figcaption>Rank the 26 candidates by post-synthesis area and lay out only the top 3: you still capture 89% of the area improvement that laying out all 26 would find.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5. directed search (the genetic algorithm) -->
+  <section id="final">
+    <p class="q">6 &middot; The final method</p>
+    <h2>Steering the search with the cheap score</h2>
+    <p class="takeaway"><span>Takeaway</span>A search steered by the cheap score found smaller recipes on 3 of the 4 hardest designs and one new win, on riscv32i. Timing decided every outcome.</p>
+    <p class="lead muted">Random sampling is blind: it never learns from the recipes it has already graded. But the post-synthesis score takes seconds, so a search can afford to score hundreds of recipes and improve as it goes. I used a <strong>genetic algorithm</strong>: keep the best-scoring recipes, mix pieces of them together, change a few steps at random, and repeat. When the search ends, the 3 recipes with the best scores from any round get a full layout, as a final check.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 860 252" role="img" aria-label="The directed search. Inside the search, for 12 rounds and using synthesis only: a population of recipes is synthesized, scored by post-synthesis area, and the best are kept, mixed and mutated into the next population. Every recipe scored in any round is remembered, about 180 per design. Once, after round 12, the 3 recipes with the smallest scores get a full layout to sign-off. The layout results are not fed back into the search.">
+        <!-- the search loop: synthesis only -->
+        <rect x="4" y="26" width="528" height="172" rx="12" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text class="kl" x="268" y="16" text-anchor="middle">The search: 12 rounds, synthesis only (seconds per recipe)</text>
+
+        <rect class="bx" x="18" y="40" width="204" height="48" rx="9"/>
+        <text class="tt" x="120" y="61" text-anchor="middle">a population of recipes</text>
+        <text class="sub" x="120" y="77" text-anchor="middle">20, starting from resyn2 + random</text>
+
+        <rect class="bx" x="310" y="40" width="204" height="48" rx="9"/>
+        <text class="tt" x="412" y="61" text-anchor="middle">synthesize each one</text>
+        <text class="sub" x="412" y="77" text-anchor="middle">no placement or routing</text>
+
+        <rect class="bx key" x="310" y="136" width="204" height="48" rx="9"/>
+        <text class="tt" x="412" y="157" text-anchor="middle">score: post-synthesis area</text>
+        <text class="sub" x="412" y="173" text-anchor="middle" style="fill:var(--win)">the cheap signal from above</text>
+
+        <rect class="bx" x="18" y="136" width="204" height="48" rx="9"/>
+        <text class="tt" x="120" y="157" text-anchor="middle">keep the best, mix, mutate</text>
+        <text class="sub" x="120" y="173" text-anchor="middle">this becomes the next population</text>
+
+        <path class="lna" d="M222 64 L306 64" marker-end="url(#ara)"/>
+        <path class="lna" d="M412 88 L412 132" marker-end="url(#ara)"/>
+        <path class="lna" d="M310 160 L226 160" marker-end="url(#ara)"/>
+        <path class="lna" d="M120 136 L120 92" marker-end="url(#ara)"/>
+        <text class="kl" x="266" y="106" text-anchor="middle" style="font-size:12px">repeat</text>
+        <text class="kl" x="266" y="120" text-anchor="middle" style="font-size:12px">12 rounds</text>
+
+        <!-- every score is remembered -->
+        <path class="ln" d="M514 160 L552 160 L552 64 L576 64" marker-end="url(#ar)"/>
+        <rect class="bx" x="580" y="40" width="274" height="48" rx="9"/>
+        <text class="tt" x="717" y="61" text-anchor="middle">every score is remembered</text>
+        <text class="sub" x="717" y="77" text-anchor="middle">about 180 recipes, from all 12 rounds</text>
+
+        <!-- once, at the end -->
+        <path class="ln" d="M717 88 L717 132" marker-end="url(#ar)"/>
+        <text class="sub" x="726" y="114" style="font-weight:700">after round 12, once</text>
+        <rect class="bx key" x="580" y="136" width="274" height="48" rx="9"/>
+        <text class="tt" x="717" y="157" text-anchor="middle">lay out the top 3</text>
+        <text class="sub" x="717" y="173" text-anchor="middle">the 3 smallest scores, full layout to sign-off</text>
+        <text class="sub" x="717" y="200" text-anchor="middle">physical design: up to an hour per recipe</text>
+
+        <text class="sub" x="8" y="236">The layouts are only the final check. Their results are not fed back into the search, so it never learns which of its picks missed timing.</text>
+      </svg>
+      <div class="cap">Per design, the search synthesized and scored about 180 recipes in 2 to 10 minutes, then paid for just 3 full layouts. Random sampling paid for a full layout on every one of its 26 candidates.</div>
+    </div>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">What happens in each round</h3>
+    <ol class="rounds" id="ga-steps">
+      <li><strong>Score.</strong> Synthesize all 20 recipes and measure each one's post-synthesis area. Smaller is better.</li>
+      <li><strong>Keep.</strong> The best 5 move on to the next round unchanged, so a good recipe is never lost.</li>
+      <li><strong>Mix.</strong> Build the other 15 from pairs of strong parents (each parent is the best of 3 recipes picked at random). Cut each parent's step list at a random point, then join the front of one to the back of the other. The search does not know which pieces are good: most new recipes come out worse and are scored out in the next round, while the lucky combinations survive and pass their pieces on.</li>
+      <li><strong>Mutate.</strong> Change the new recipe a little at random: drop a step, insert a step, or swap one step for another. This keeps the search trying things neither parent had.</li>
+    </ol>
+
+    <div class="diagram" id="ga">
+      <div class="ga-top"><span id="ga-round" class="ga-round">Round 1</span><span id="ga-best" class="ga-best">Best area so far: not scored yet</span></div>
+      <svg id="ga-svg" viewBox="0 0 860 278" role="img" aria-label="Animated illustration of the genetic algorithm: six recipes are scored by post-synthesis area and ranked, the best two are kept, four new recipes are built by joining the front of one strong parent to the back of another and mutating one step, and in round two a new recipe takes the top spot.">
+        <text class="sub" x="40" y="14">recipe (its steps, in order)</text>
+        <text class="sub" x="470" y="14">post-synthesis area (smaller is better)</text>
+        <g id="ga-rows"></g>
+        <g id="ga-fly"></g>
+      </svg>
+      <div class="ga-bottom">
+        <p id="ga-say" class="ga-say" aria-live="polite">Press Play to watch one round of the search, or Next to go one step at a time.</p>
+        <div class="ga-ctl">
+          <span id="ga-count" class="ga-count">15 steps</span>
+          <button id="ga-prev" class="ga-btn" type="button" aria-label="Previous step">&#9664; Back</button>
+          <button id="ga-btn" class="ga-btn" type="button">&#9654; Play</button>
+          <button id="ga-pause" class="ga-btn" type="button" disabled>&#10073;&#10073; Pause</button>
+          <button id="ga-next" class="ga-btn" type="button" aria-label="Next step">Next &#9654;</button>
+        </div>
+      </div>
+      <div class="cap">An illustration with 6 recipes and made-up areas, so each move is easy to follow; the real search used 20 recipes and 12 rounds. Blue steps come from the first parent, outlined steps from the second, and dashed green steps are mutations.</div>
+    </div>
+
+    <p style="margin-top:18px">I pointed it at the four hardest designs: aes (an encryption core), uart (a serial-port controller), and ibex and riscv32i (two small processor cores). They are hard because almost every recipe fails timing on them. Of the 25 random recipes tried on each, only 1 to 4 met timing at all, and none of those beat resyn2&rsquo;s area. On ibex and riscv32i, even resyn2 itself misses timing at that clock.</p>
+    <p>The bar for a win did not change: after a full layout, a recipe must meet timing and use less area than resyn2. On each design the search ran 12 rounds of 20 recipes, and I laid out its top 3:</p>
+    <div class="vs-wrap">
+      <table class="vs n1">
+        <thead><tr><th>Design</th><th>resyn2</th><th>Search&rsquo;s best pick: area</th><th>Its timing</th></tr></thead>
+        <tbody>
+          <tr><td>riscv32i</td><td>9.4 picoseconds late</td><td class="b">0.8% smaller</td><td class="b">11.5 picoseconds to spare</td></tr>
+          <tr><td>aes</td><td>1.3 picoseconds to spare</td><td class="b">5.0% smaller</td><td>3.6 picoseconds late (0.9% of the clock)</td></tr>
+          <tr><td>uart</td><td>1.3 picoseconds to spare</td><td class="b">4.6% smaller</td><td class="w">10.0 picoseconds late (3.4% of the clock)</td></tr>
+          <tr><td>ibex</td><td>32.3 picoseconds late</td><td class="w">0.2% larger</td><td class="w">79.6 picoseconds late (8.0% of the clock)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap" style="margin-top:9px">The best pick is the laid-out recipe that came closest to winning. A near miss is smaller than resyn2 and late by less than 1% of the clock period. Timing is pass or fail at sign-off, so a near miss does not count as a win, but a miss that small may be closable with later timing repair.</p>
+    <p class="summary"><strong>Summary.</strong> Steering the search with the cheap score found recipes smaller than resyn2 on three of the four hardest designs, but timing decided every outcome. Only riscv32i produced a win, on a design where neither resyn2 nor random sampling met timing with less area. On the other three designs every laid-out recipe missed timing, though by very different margins. aes was a near miss, trading 5% less area for about 1% more delay; uart was smaller but further off; and ibex was neither smaller nor close. The pattern is consistent: smaller logic tends to be slower, so a score that rewards area alone pushes past the timing limit.</p>
+
+  </section>
+
+  <!-- 7. engineering: the harness behind every number -->
+  <section id="engineering">
+    <p class="q">7 &middot; Engineering</p>
+    <h2>Making 234 full layouts trustworthy and affordable</h2>
+    <p class="takeaway"><span>Takeaway</span>Every number comes from one harness that runs a recipe through the full flow. Making it trustworthy and affordable meant calibrated clocks and sharing one machine across 79 hours of layouts.</p>
+    <p class="lead muted">Every number on this page comes from one operation: run a recipe through the whole flow and read the sign-off result. Making that operation trustworthy, and affordable on a single shared machine, was most of the engineering.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">Running any recipe in the real flow</h3>
+    <p style="margin-top:4px">The flow normally reads its optimization recipe from one fixed file, so I wrote <a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/patch_orfs.py">a small, reversible patch</a> that lets it take any recipe file instead. A recipe became just text, in three parts. A fixed opening step builds the logic graph, the searched middle is the list of transforms, and a fixed closing sequence maps the logic onto real library cells and sizes them. Holding the two ends fixed keeps every comparison like for like and always hands the layout tools a valid circuit.</p>
+    <p><a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/harness.py">The harness</a> wraps everything else in one call: given a design and a recipe, run the full flow and return area, timing and power. Each recipe runs in its own output folder, named from a fingerprint of its steps, so hundreds of runs never overwrite each other and a repeated recipe is easy to spot. The harness records the raw measurements rather than a single score, so the definition of a win could change later without re-running anything. The directed search uses a lighter version that stops after synthesis and remembers every recipe it has already scored.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">Choosing the designs and their clocks</h3>
+    <p style="margin-top:4px">I <a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/probe_designs.py">tried all 12 example designs</a> the flow ships for this technology. All 12 synthesized, but aes-block fails floorplanning even in the unmodified flow, and the two largest processor cores (about 94,000 and 100,000 cells) would have dominated layout time. That left 9 designs, from 418 to 58,336 cells. With 26 candidates per design, that makes 234 full layouts.</p>
+    <p>Measuring resyn2 first, at each design&rsquo;s shipped clock, changed the plan: 6 of the 9 designs missed timing there. When a design misses timing, the flow spends extra area trying to catch up, so raw area could not be compared fairly. Each design therefore needed its own <a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/calibrate_clocks.py">matched-timing clock</a>. The calibration repeats a simple loop: lay out resyn2, measure how late or early its slowest path is, move the clock by that amount plus a small margin, and lay it out again. Three designs needed special handling. On mock-alu the shipped clock was about 3.5 times too fast for any recipe to meet. On ethmac, which has several clocks, the slowest path sat on a secondary clock, so only scaling every clock together moved it. On riscv32i, timing did not even move steadily with the clock, so it sits at the best point the loop found.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">When every recipe gave the same area</h3>
+    <p style="margin-top:4px">The first results contained a problem that could have passed for a finding. On ibex, mock-alu and riscv32i, resyn2 looked unbeatable because every recipe gave exactly the same area. Real recipes never agree that perfectly, so I traced it. Settings in those three designs sent synthesis down a newer code path that silently ignores the recipe: they had been comparing resyn2 against itself. <a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/labelsweep.py">Forcing the classic path</a> fixed all three, and mock-alu turned into a real win, with 10 recipes beating resyn2. Since then, identical results across different recipes are treated as a warning sign, not a result.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">Sharing one machine</h3>
+    <p style="margin-top:4px">The 234 layouts took about 79 hours of compute in total. A single layout ranged from about a minute on uart to about an hour on ethmac. Rerunning those three designs meant 78 more full layouts on a machine that was also running other work, and each layout needs about 3.6 gigabytes of memory at its peak. So I wrote <a href="https://github.com/Samcooper01/learned-synth/blob/main/harness/loadmanaged_rerun.py">a runner</a> that sizes its own workload to the free memory. Every 20 seconds it checks how much memory is available, sets aside a reserve of about 8 gigabytes for everything else, and starts another layout only if one more fits in what is left. Launches are staggered so memory peaks do not line up. It never stops a running layout, it writes each result the moment a layout finishes, and when restarted it skips any layout already done, so a crash or a reboot costs nothing but the layouts in progress.</p>
+
+    <h3 style="margin:26px 0 4px; font-size:1.08rem">Reproducing it</h3>
+    <p style="margin-top:4px">Every result on this page comes from data files in the repository, and the scripts that produced them run in order: check the designs, measure resyn2, calibrate the clocks, run the 234 layouts, analyze them, and run the directed search. The commands are listed in the <a href="https://github.com/Samcooper01/learned-synth#reproduce">README</a>, and the charts regenerate from the same data.</p>
+  </section>
+
+  <!-- 8. conclusion: results and future work -->
+  <section id="results">
+    <p class="q">8 &middot; Conclusion</p>
+    <h2>The standard recipe can be improved for most designs</h2>
+    <p class="takeaway"><span>Takeaway</span>resyn2 can be improved on 6 of 9 designs. Where it held, timing was the limit, which points to a timing-aware score as the next step.</p>
+    <p class="lead muted">The question was whether resyn2, the fixed recipe every design gets, is good enough. Graded on full chip layouts at matched timing, it can be improved on most designs: on 6 of 9, a recipe chosen for that design uses up to 5.8% less area and still meets timing. Random sampling found five of these and the directed search the sixth, and on two of them, riscv32i and mock-alu, resyn2 itself misses timing. A cheap post-synthesis score kept the search affordable, since laying out only the top 3 of 26 candidates still captured 89% of the available area gain. On the remaining three designs, aes, uart and ibex, nothing beat resyn2, though aes came within 1% of the clock with 5% less area. Where almost every recipe fails timing, area alone is not enough. Every number below comes from a full layout to sign-off.</p>
+
+    <div class="res-wrap">
+      <table class="res">
+        <thead><tr><th>Design</th><th>Size (cells)</th><th>resyn2, the standard</th><th>Best recipe found</th><th>Found by</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="5">A better recipe found: 6 designs</td></tr>
+          <tr><td><div class="dn">gcd</div><div class="dd">greatest-common-divisor unit</div></td><td class="num">~400</td><td class="ok">meets timing</td><td class="gain">5.8% less area</td><td class="none">random sample</td></tr>
+          <tr><td><div class="dn">jpeg</div><div class="dd">image-compression encoder</div></td><td class="num">~58,000</td><td class="ok">meets timing</td><td class="gain">2.2% less area</td><td class="none">random sample</td></tr>
+          <tr><td><div class="dn">ethmac</div><div class="dd">Ethernet network controller</div></td><td class="num">~56,000</td><td class="ok">meets timing</td><td class="gain">2.1% less area</td><td class="none">random sample</td></tr>
+          <tr><td><div class="dn">riscv32i</div><div class="dd">small processor core</div></td><td class="num">~8,600</td><td class="late">misses: 9.4 picoseconds late</td><td class="gain">0.8% less area, and meets timing</td><td class="none">directed search</td></tr>
+          <tr><td><div class="dn">mock-alu</div><div class="dd">synthetic arithmetic unit</div></td><td class="num">~11,000</td><td class="late">misses: 8.5 picoseconds late</td><td class="gain">0.7% less area, and meets timing</td><td class="none">random sample</td></tr>
+          <tr><td><div class="dn">mock-cpu</div><div class="dd">synthetic processor</div></td><td class="num">~39,000</td><td class="ok">meets timing</td><td class="gain">0.2% less area</td><td class="none">random sample</td></tr>
+          <tr class="grp hold"><td colspan="5">resyn2 stays best: 3 designs</td></tr>
+          <tr><td><div class="dn">aes</div><div class="dd">encryption core</div></td><td class="num">~14,000</td><td class="ok">meets timing</td><td class="none">no better recipe found</td><td class="none">-</td></tr>
+          <tr><td><div class="dn">uart</div><div class="dd">serial-port controller</div></td><td class="num">~750</td><td class="ok">meets timing</td><td class="none">no better recipe found</td><td class="none">-</td></tr>
+          <tr><td><div class="dn">ibex</div><div class="dd">processor core</div></td><td class="num">~17,000</td><td class="late">misses: 32.3 picoseconds late</td><td class="none">no better recipe found</td><td class="none">-</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap" style="margin-top:9px">Size is the approximate number of standard cells after synthesis. Area changes are relative to resyn2 on the same design and clock. The directed search ran only on the four designs where random sampling found no win (riscv32i, aes, uart, ibex).</p>
+    <h3 style="margin:30px 0 4px; font-size:1.08rem">Future work</h3>
+    <p style="margin-top:4px">The results point to clear next steps. They are ordered from the cheapest, a handful of extra layouts, to the most ambitious, a model that picks recipes for designs it has never seen.</p>
+    <ol class="took">
+      <li><strong>Close the near misses.</strong> aes ended 3.6 picoseconds late after the flow&rsquo;s standard timing repair, which aims for exactly zero slack. Asking that repair to over-fix by a few picoseconds would likely close the gap within its 5% area savings, and the same treatment could be tried on uart, which missed by more. resyn2 would get the same extra repair, to keep the comparison fair.</li>
+      <li><strong>Strengthen the evidence.</strong> Each directed search ran once, with one random seed. Repeating it with different seeds would show how often a win like riscv32i&rsquo;s comes back. Giving random sampling the same budget of about 180 scored recipes would show how much of the gain comes from steering rather than from scoring more recipes. Laying out each winner at slightly faster and slower clocks would show how much timing margin it really has.</li>
+      <li><strong>Score timing as well as area.</strong> Keep minimizing area, but penalize any recipe likely to miss the clock. This needs a quick timing estimate after synthesis, which the flow does not report today. There are three candidate sources: OpenROAD&rsquo;s timing analysis on the synthesized netlist, the delay estimate the logic optimizer already computes while mapping to cells, or simply the depth of the logic graph. Each is optimistic without real wiring, so each must first be shown to track the result after layout. Power is already recorded for every layout and could join the score the same way.</li>
+      <li><strong>Let layouts teach the search.</strong> Today the top 3 are laid out once, at the end, and the results never reach the search. Running a few layouts during the search would let it correct the cheap score as it goes, for example by learning that very small recipes on a given design tend to miss timing. Mixing a cheap score with occasional expensive checks this way is known as multi-fidelity optimization.</li>
+      <li><strong>Learn the policy.</strong> With a timing-aware score in place, a reinforcement learning policy could learn which transform to apply next, rewarded by the real sign-off result rather than by gate count. Unlike the search, which starts from scratch on every design, a policy could carry what it learns from one design to the next.</li>
+      <li><strong>Grow the design set.</strong> Nine designs are enough to find a better recipe for each one, but not to predict a good recipe for a brand-new design. The graph model in section 3 showed why: it only generalized to structures it had trained on. The two large processor cores held out for layout time are the natural first additions, and every new design adds 26 more full layouts to the dataset.</li>
+    </ol>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    A personal research project by Sam Cooper &middot;
+    <a href="https://github.com/Samcooper01/learned-synth">github.com/Samcooper01/learned-synth</a>
+  </div>
+</footer>
+
+<script>
+/* Genetic-algorithm illustration: one round on a population of 6 (scripted, made-up areas). */
+(function () {
+  var svg = document.getElementById('ga-svg');
+  if (!svg) return;
+  var NS = 'http://www.w3.org/2000/svg';
+  var rowsLayer = document.getElementById('ga-rows'), flyLayer = document.getElementById('ga-fly');
+  var sayEl = document.getElementById('ga-say'), btn = document.getElementById('ga-btn');
+  var roundEl = document.getElementById('ga-round'), bestEl = document.getElementById('ga-best');
+  var steps = document.querySelectorAll('#ga-steps li');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var CW = 60, CH = 26, CS = 66, X0 = 40, BX = 470;
+  function slotY(s) { return 30 + s * 42; }
+  function barW(a) { return a - 700; }
+
+  var INIT = [
+    { id: 1, steps: ['rewrite', 'refactor', 'balance', 'resub', 'rewrite'], area: 842 },
+    { id: 2, steps: ['balance', 'resub', 'resub', 'refactor'], area: 905 },
+    { id: 3, steps: ['resub', 'rewrite', 'refactor', 'balance', 'refactor', 'rewrite'], area: 821 },
+    { id: 4, steps: ['refactor', 'balance', 'rewrite'], area: 930 },
+    { id: 5, steps: ['balance', 'rewrite', 'refactor', 'rewrite', 'resub'], area: 868 },
+    { id: 6, steps: ['rewrite', 'resub', 'balance', 'rewrite'], area: 884 }
+  ];
+  // each child: parents a, b; keep a's first ka steps and b's steps from kb on; one mutation; its area
+  var CHILDREN = [
+    { a: 3, ka: 3, b: 1, kb: 2, mut: { type: 'swap', i: 5, to: 'balance' }, area: 803,
+      mix: 'Mix: pick two strong parents and cut each at a random point. The front of the first (blue) joins the back of the second (outlined).',
+      say: 'Mutate: one step is swapped for another (rewrite becomes balance).' },
+    { a: 1, ka: 2, b: 5, kb: 3, mut: { type: 'insert', i: 2, to: 'balance' }, area: 829,
+      mix: 'Mix again with another pair of strong parents.',
+      say: 'Mutate: a new step is inserted (balance).' },
+    { a: 5, ka: 3, b: 3, kb: 4, mut: { type: 'drop', i: 3 }, area: 851,
+      mix: 'Mix again: different random cut points give a different child.',
+      say: 'Mutate: a step is dropped (the repeated refactor).' },
+    { a: 3, ka: 2, b: 1, kb: 3, mut: { type: 'swap', i: 2, to: 'refactor' }, area: 836,
+      mix: 'Mix one last time to fill the population back up to 6.',
+      say: 'Mutate: one step is swapped (resub becomes refactor).' }
+  ];
+
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function move(e, x, y) { e.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
+  function place(e, x, y) {           // move without animating
+    e.style.transition = 'none'; move(e, x, y);
+    svg.getBoundingClientRect(); e.style.transition = '';
+  }
+  var KINDS = { n: ['stepb', 'stepbt'], a: ['step', 'stept'], m: ['stepm', 'stepmt'], x: ['stepx', 'stepft'] };
+  function setKind(c, kind) {
+    c.firstChild.setAttribute('class', KINDS[kind][0]);
+    c.lastChild.setAttribute('class', KINDS[kind][1]);
+  }
+  function makeChip(name, kind, parent) {
+    var c = el('g', { 'class': 'mv' }, parent);
+    el('rect', { width: CW, height: CH, rx: 7 }, c);
+    var t = el('text', { x: CW / 2, y: 17, 'text-anchor': 'middle' }, c);
+    t.textContent = name;
+    setKind(c, kind);
+    return c;
+  }
+
+  function makeRow(stepsList, area, slot, id) {
+    var g = el('g', { 'class': 'mv' }, rowsLayer);
+    place(g, 0, slotY(slot));
+    var r = { id: id, g: g, area: area, slot: slot, steps: stepsList.slice(), chips: [], scored: false };
+    r.hl = el('rect', { x: 30, y: -2, height: CH + 8, rx: 9, 'class': 'ghl-a fade', opacity: 0 }, g);
+    r.chipLayer = el('g', {}, g);
+    var barG = el('g', {}, g);
+    barG.setAttribute('transform', 'translate(' + BX + ',0)');
+    r.bar = el('rect', { x: 0, y: 6, height: 15, rx: 3, width: barW(area), 'class': 'gbar bar' }, barG);
+    r.bar.style.transform = 'scaleX(0)';
+    r.num = el('text', { x: barW(area) + 8, y: 18, 'class': 'gnum fade', opacity: 0 }, barG);
+    r.num.textContent = area;
+    r.tag = el('g', { 'class': 'fade', opacity: 0 }, g);
+    el('rect', { x: 772, y: 2, width: 76, height: 22, rx: 11, 'class': 'gtag' }, r.tag);
+    r.tagT = el('text', { x: 810, y: 17, 'text-anchor': 'middle', 'class': 'gtagt' }, r.tag);
+    stepsList.forEach(function (n) { r.chips.push(makeChip(n, 'n', r.chipLayer)); });
+    layout(r, true);
+    return r;
+  }
+  function layout(r, instant) {
+    r.chips.forEach(function (c, i) { (instant ? place : move)(c, X0 + i * CS, 2); });
+    r.hl.setAttribute('width', X0 - 30 + r.chips.length * CS + 4);
+  }
+  function score(r) {
+    r.bar.setAttribute('width', barW(r.area));
+    r.num.setAttribute('x', barW(r.area) + 8);
+    r.num.textContent = r.area;
+    svg.getBoundingClientRect();
+    r.bar.style.transform = 'scaleX(1)';
+    r.num.setAttribute('opacity', 1);
+    r.scored = true;
+  }
+  function tag(r, text) { r.tagT.textContent = text; r.tag.setAttribute('opacity', text ? 1 : 0); }
+  function cutLine(r, k) {
+    var x = X0 + k * CS - 3;
+    return el('path', { d: 'M' + x + ' -5 L' + x + ' ' + (CH + 9), stroke: 'var(--muted)',
+      'stroke-width': 1.6, 'stroke-dasharray': '3 3', fill: 'none' }, r.g);
+  }
+  function say(t) { sayEl.textContent = t; }
+  function setStep(i) { for (var k = 0; k < steps.length; k++) steps[k].classList.toggle('active', k === i); }
+
+  // ---- run control: play, pause, and step forward or back ----
+  // The script is split into NBEATS steps; each step ends with beat(). Stepping forward plays
+  // one step and stops at its end. Stepping back replays from the start instantly up to the
+  // earlier step, so every state is rebuilt the same way it was first reached.
+  var prevBtn = document.getElementById('ga-prev'), nextBtn = document.getElementById('ga-next');
+  var countEl = document.getElementById('ga-count'), pauseBtn = document.getElementById('ga-pause');
+  var NBEATS = 15;
+  var rows = [], token = 0, paused = false, state = 'idle';
+  var beatIdx = -1, stopAt = Infinity, fast = false, atBeat = false;
+
+  function sleep(ms, my) {
+    return new Promise(function (res) {
+      var t = 0;
+      (function tick() {
+        if (my !== token) return res();
+        if (!paused) t += 50;
+        if (t >= ms) res(); else setTimeout(tick, 50);
+      })();
+    });
+  }
+  function sync() {
+    // the step on screen: the one just finished when stopped at a boundary, else the one playing
+    var shown = Math.min(NBEATS, atBeat ? beatIdx + 1 : beatIdx + 2);
+    countEl.textContent = state === 'idle' ? NBEATS + ' steps' : 'Step ' + shown + ' of ' + NBEATS;
+    btn.innerHTML = state === 'done' ? '&#8635; Replay' : '&#9654; Play';
+    btn.disabled = state === 'run';
+    pauseBtn.disabled = state !== 'run';
+    prevBtn.disabled = beatIdx <= 0 && !(beatIdx === 0 && !atBeat);
+    nextBtn.disabled = state === 'done';
+  }
+  function reset() {
+    rowsLayer.textContent = ''; flyLayer.textContent = '';
+    rows = INIT.map(function (d, i) { return makeRow(d.steps, d.area, i, d.id); });
+    roundEl.textContent = 'Round 1';
+    bestEl.textContent = 'Best area so far: not scored yet';
+    setStep(-1);
+  }
+  function byId(id) { return rows.filter(function (r) { return r.id === id; })[0]; }
+  function rank() {
+    rows.sort(function (p, q) { return p.area - q.area; });
+    rows.forEach(function (r, i) { r.slot = i; move(r.g, 0, slotY(i)); });
+  }
+
+  // start from the beginning; with jumpTo, rebuild instantly up to that step and stop there
+  function start(stop, jumpTo) {
+    var my = ++token;
+    paused = false; atBeat = false; state = 'run'; beatIdx = -1; stopAt = stop;
+    fast = jumpTo !== undefined;
+    svg.classList.toggle('instant', fast);
+    sync();
+    run(my, fast ? jumpTo : -1);
+  }
+
+  async function run(my, fastUntil) {
+    async function wait(ms) {
+      if (!fast) await sleep(reduce ? Math.min(ms, 900) : ms, my);
+      if (my !== token) throw 'cancel';
+    }
+    // a trailing pause before a step ends: kept short when about to stop for the viewer
+    function linger(ms) { return wait(beatIdx + 1 >= stopAt ? Math.min(ms, 800) : ms); }
+    async function beat() {
+      beatIdx++;
+      if (fast && beatIdx >= fastUntil) {
+        svg.getBoundingClientRect(); fast = false; svg.classList.remove('instant');
+      }
+      if (beatIdx >= stopAt) {
+        paused = true; atBeat = true; state = 'pause'; sync();
+        await new Promise(function (res) {
+          (function tick() { if (my !== token || !paused) res(); else setTimeout(tick, 60); })();
+        });
+        if (my !== token) throw 'cancel';
+        atBeat = false;
+      }
+      sync();
+    }
+
+    reset();
+    try {
+      say('Round 1 starts with a population of 6 recipes (the real search uses 20).');
+      await linger(1600);
+      await beat();                                                     // step 1
+
+      setStep(0);
+      say('Score: synthesize every recipe and measure its post-synthesis area. Smaller is better.');
+      for (var i = 0; i < rows.length; i++) { score(rows[i]); await wait(300); }
+      await linger(1100);
+      await beat();                                                     // step 2
+
+      say('Rank them, with the smallest area on top.');
+      rank();
+      var best = rows[0].area;
+      await linger(1500);
+      bestEl.textContent = 'Best area so far: ' + best;
+      await beat();                                                     // step 3
+
+      setStep(1);
+      say('Keep: the best 2 move on to the next round unchanged. The other 4 will be replaced.');
+      tag(rows[0], 'kept'); tag(rows[1], 'kept');
+      for (i = 2; i < rows.length; i++) rows[i].g.style.opacity = 0.4;
+      await linger(2200);
+      await beat();                                                     // step 4
+
+      for (var c = 0; c < CHILDREN.length; c++) {
+        var d = CHILDREN[c], slow = c === 0 ? 1.6 : 1;
+        var A = byId(d.a), B = byId(d.b), target = rows[rows.length - 1 - c];
+
+        // mix: highlight parents, cut, dim the parts that are not inherited
+        setStep(2); say(d.mix);
+        [A, B].forEach(function (p) { p.g.style.opacity = 1; });
+        A.hl.setAttribute('class', 'ghl-a fade'); B.hl.setAttribute('class', 'ghl-b fade');
+        A.hl.setAttribute('opacity', 1); B.hl.setAttribute('opacity', 1);
+        var cuts = [cutLine(A, d.ka), cutLine(B, d.kb)];
+        A.chips.forEach(function (ch, j) { if (j < d.ka) setKind(ch, 'a'); else ch.style.opacity = 0.3; });
+        B.chips.forEach(function (ch, j) { if (j < d.kb) ch.style.opacity = 0.3; });
+        await wait(1200 * slow);
+
+        // the replaced recipe fades out, inherited pieces fly into its slot
+        target.g.style.opacity = 0;
+        await wait(450);
+        var names = A.steps.slice(0, d.ka).concat(B.steps.slice(d.kb));
+        var kinds = A.steps.slice(0, d.ka).map(function () { return 'a'; })
+          .concat(B.steps.slice(d.kb).map(function () { return 'n'; }));
+        var ty = slotY(target.slot) + 2, flies = [];
+        names.forEach(function (n, j) {
+          var fromA = j < d.ka, p = fromA ? A : B, src = fromA ? j : d.kb + (j - d.ka);
+          var f = makeChip(n, kinds[j], flyLayer);
+          place(f, X0 + src * CS, slotY(p.slot) + 2);
+          flies.push([f, X0 + j * CS, ty]);
+        });
+        svg.getBoundingClientRect();
+        flies.forEach(function (f) { move(f[0], f[1], f[2]); });
+        await wait(950 * slow);
+
+        // the child becomes a real row in the target's slot
+        var child = makeRow([], d.area, target.slot, 100 + c);
+        names.forEach(function (n, j) { child.chips.push(makeChip(n, kinds[j], child.chipLayer)); });
+        child.steps = names.slice();
+        layout(child, true);
+        flyLayer.textContent = '';
+        rowsLayer.removeChild(target.g);
+        rows[rows.indexOf(target)] = child;
+
+        // restore the parents
+        [A, B].forEach(function (p) {
+          p.hl.setAttribute('opacity', 0);
+          p.chips.forEach(function (ch) { ch.style.opacity = 1; setKind(ch, 'n'); });
+          if (p.slot > 1) p.g.style.opacity = 0.4;
+        });
+        cuts.forEach(function (x) { x.remove(); });
+        await linger(500 * slow);
+        await beat();                                                   // steps 5, 7, 9, 11
+
+        // mutate
+        setStep(3); say(d.say);
+        var m = d.mut;
+        if (m.type === 'swap') {
+          var ch = child.chips[m.i];
+          ch.style.opacity = 0; await wait(350);
+          ch.lastChild.textContent = m.to; setKind(ch, 'm'); ch.style.opacity = 1;
+          child.steps[m.i] = m.to;
+        } else if (m.type === 'insert') {
+          var nc = makeChip(m.to, 'm', child.chipLayer);
+          place(nc, X0 + m.i * CS, 2); nc.style.opacity = 0;
+          child.chips.splice(m.i, 0, nc); child.steps.splice(m.i, 0, m.to);
+          layout(child); await wait(450); nc.style.opacity = 1;
+        } else {
+          var dc = child.chips[m.i];
+          setKind(dc, 'x'); await wait(600);
+          dc.style.opacity = 0; await wait(450);
+          dc.remove(); child.chips.splice(m.i, 1); child.steps.splice(m.i, 1);
+          layout(child);
+        }
+        await linger(1400 * slow);
+        await beat();                                                   // steps 6, 8, 10, 12
+      }
+
+      // round 2: score the new recipes, rank, a child takes the lead
+      roundEl.textContent = 'Round 2';
+      rows.forEach(function (r) { r.g.style.opacity = 1; tag(r, ''); r.chips.forEach(function (ch) { setKind(ch, 'n'); }); });
+      setStep(0);
+      say('Round 2: score the 4 new recipes. The 2 kept ones already have their score.');
+      await wait(900);
+      for (i = 0; i < rows.length; i++) if (!rows[i].scored) { score(rows[i]); await wait(400); }
+      await linger(1000);
+      await beat();                                                     // step 13
+
+      say('Rank again.');
+      rank();
+      await linger(1500);
+      if (rows[0].area < best) {
+        tag(rows[0], 'new best');
+        bestEl.textContent = 'Best area so far: ' + best + ' → ' + rows[0].area;
+      }
+      await beat();                                                     // step 14
+
+      setStep(-1);
+      say('A new recipe now beats everything from round 1. The real search repeats this for 12 rounds, then lays out only the top 3.');
+      beatIdx++;                                                        // step 15
+      state = 'done'; atBeat = true; sync();
+    } catch (e) { if (e !== 'cancel') throw e; }
+  }
+
+  function play() {
+    if (state === 'pause') { stopAt = Infinity; paused = false; state = 'run'; sync(); }
+    else if (state !== 'run') start(Infinity);
+  }
+  function pause() {
+    if (state === 'run') { paused = true; state = 'pause'; sync(); }
+  }
+  function next() {
+    if (state === 'done') return;
+    if (state === 'idle') { start(0); return; }
+    stopAt = beatIdx + 1;              // finish the current step, then stop
+    if (state === 'pause') { paused = false; state = 'run'; }
+    sync();
+  }
+  function prev() {
+    // mid-step: back to where this step began; at a step boundary: back one step
+    var target = Math.max(0, atBeat ? beatIdx - 1 : beatIdx);
+    if (beatIdx < 0) return;
+    start(target, target);
+  }
+  btn.addEventListener('click', play);
+  pauseBtn.addEventListener('click', pause);
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+  document.getElementById('ga').addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+
+  // stays still until the viewer presses Play or Next
+  reset(); sync();
+})();
+</script>
+
+<script>
+/* table of contents: marks the last section whose top has passed near the top of
+   the window. On wide screens the list starts below the header, rides up with the
+   page until it reaches the top, follows from there, and hides before the footer. */
+(function () {
+  var toc = document.getElementById('toc'), btn = document.getElementById('toc-btn');
+  var links = [].slice.call(toc.querySelectorAll('a'));
+  var secs = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  var head = document.querySelector('header'), foot = document.querySelector('footer');
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var queued = false;
+
+  function update() {
+    queued = false;
+    if (wide.matches) {
+      toc.style.top = Math.max(96, head.getBoundingClientRect().bottom + 28) + 'px';
+      var clear = foot.getBoundingClientRect().top > toc.getBoundingClientRect().top + toc.offsetHeight + 24;
+      toc.classList.toggle('is-on', clear);
+    } else {
+      toc.style.top = '';
+    }
+    var here = 0;
+    secs.forEach(function (sec, i) { if (sec && sec.getBoundingClientRect().top < 140) here = i; });
+    /* at the very bottom the last section may never reach the top: mark the last */
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) here = secs.length - 1;
+    links.forEach(function (a, i) { a.classList.toggle('is-here', i === here); });
+  }
+  function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue);
+  /* web fonts change the header's height once they load: place the list again */
+  window.addEventListener('load', queue);
+  if (document.fonts) document.fonts.ready.then(queue);
+
+  /* below 1000px: the list is a small card opened by the Contents button */
+  function setOpen(open) {
+    toc.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!toc.classList.contains('open')); });
+  links.forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
+  document.addEventListener('click', function (e) { if (!toc.contains(e.target)) setOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  /* the card starts open on tablets, and closed on phones so the title shows first */
+  if (!window.matchMedia('(max-width: 639px)').matches) setOpen(true);
+  update();
+})();
+</script>
+<script>
+/* phones: show a swipe hint on any diagram wider than its box */
+(function () {
+  var boxes = [].slice.call(document.querySelectorAll('.diagram'));
+  boxes.forEach(function (box) {
+    var hint = document.createElement('p');
+    hint.className = 'swipe';
+    hint.textContent = 'Swipe sideways to see the whole diagram \u2192';
+    box.insertBefore(hint, box.firstChild);
+  });
+  function mark() { boxes.forEach(function (box) { box.classList.toggle('scrolls', box.scrollWidth > box.clientWidth + 2); }); }
+  window.addEventListener('resize', mark);
+  mark();
+})();
+</script>
+</body>
+</html>

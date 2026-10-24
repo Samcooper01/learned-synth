@@ -1,12 +1,17 @@
 # learned-synth
 
-**Learning logic-synthesis recipes that beat the industry-standard `resyn2` script,
-graded on real chip sign-off (post-place-and-route), not proxy metrics.**
+**Searching for logic-synthesis recipes that beat `resyn2`, the standard recipe of
+this flow's logic optimizer, graded on real chip sign-off (post-place-and-route), not
+proxy metrics.**
 
-The open RTL (Register Transfer Level) to layout flow runs one fixed, hand-tuned
-ABC (And-Inverter Graph optimizer) script - `resyn2` - for every design. `resyn2` is
-a 2000s-era heuristic that was never tuned to a modern standard-cell library. This
-project searches for a better per-design transformation sequence and measures the
+**Project page (the walkthrough, with diagrams):** https://samcooper01.github.io/learned-synth/
+
+The open RTL (Register Transfer Level) to layout flow optimizes every design's logic
+with one fixed recipe of ABC (And-Inverter Graph optimizer) transforms, the same for a
+tiny controller and a large processor. `resyn2` is the standard hand-tuned recipe
+that ships with ABC (And-Inverter Graph optimizer), built from the same classic
+transforms this project searches over, so it is the baseline every result is compared
+against. This project searches for a better per-design transformation sequence and measures the
 payoff where it actually counts: post-detailed-route area at matched timing, produced
 by the real OpenROAD flow on the ASAP7 (Arizona State University 7nm predictive
 Process Design Kit) platform.
