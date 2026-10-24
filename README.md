@@ -12,12 +12,15 @@ verified by full chip layouts.**
 </p>
 
 Logic synthesis optimizes a design's logic one small step at a time, following a
-recipe. Yosys hands this job to ABC (And-Inverter Graph optimizer), and the recipe
-never changes: a tiny controller and a large processor get exactly the same steps.
-`resyn2` is the standard hand-tuned recipe that ships with ABC (And-Inverter Graph
-optimizer). This project builds new recipes from the same classic transforms and
-grades every result on a full chip layout through sign-off, with the open OpenROAD
-flow on the ASAP7 (Arizona State University 7nm predictive Process Design Kit)
+recipe. [Yosys](https://yosyshq.net/yosys/) hands this job to
+[ABC (And-Inverter Graph optimizer)](https://github.com/berkeley-abc/abc), and the
+recipe never changes: a tiny controller and a large processor get exactly the same
+steps. [`resyn2`](https://github.com/berkeley-abc/abc/blob/master/abc.rc#L111) is the
+standard hand-tuned recipe that ships with ABC (And-Inverter Graph optimizer). This
+project builds new recipes from the same classic transforms and grades every result on
+a full chip layout through sign-off, with the open [OpenROAD](https://theopenroadproject.org/)
+flow ([OpenROAD Flow Scripts](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts))
+on the [ASAP7 (Arizona State University 7nm predictive Process Design Kit)](https://github.com/The-OpenROAD-Project/asap7)
 technology, instead of on the usual gate-count shortcut.
 
 ![results](docs/results.png)
