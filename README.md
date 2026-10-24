@@ -60,7 +60,7 @@ technology, instead of on the usual gate-count shortcut.
 | uart | ~750 | no better recipe | - |
 | ibex | ~17,000 | no better recipe | - |
 
-Every number comes from a full layout to sign-off at each design's matched-timing
+Every number comes from a full layout to sign-off at each design's iso-timing
 clock: a recipe counts as better only if it meets timing and uses less area than
 `resyn2` on the finished layout.
 
