@@ -1,4 +1,4 @@
-> **Prior work (proxy-metric era).** This documents the earlier reinforcement-learning study graded largely on the fast ABC (And-Inverter Graph optimizer) node-count proxy, on a 3-design proxy-extraction subset. The current real-QoR (Quality of Results) results on the full 9-design corpus are in [HEADLINE.md](HEADLINE.md) (Goal 1) and [PREDICTOR.md](PREDICTOR.md) (Goal 2). Kept for provenance.
+> **Prior work (proxy-metric era).** This documents the earlier reinforcement-learning study graded largely on the fast ABC (And-Inverter Graph optimizer) node-count proxy, on a 3-design proxy-extraction subset. The current real-QoR (Quality of Results) results on the full 9-design corpus are in [HEADLINE.md](HEADLINE.md) and [PREDICTOR.md](PREDICTOR.md). Kept for provenance.
 
 # Results: RL versus resyn2 on the classic ABC recipe space
 

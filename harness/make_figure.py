@@ -1,8 +1,8 @@
 """Generate the recruiter-facing results figure (docs/results.png).
 
 Two panels, both computed from the label-factory dataset:
-  A. Goal 1 - best searched-recipe area vs resyn2 at matched delay, per design.
-  B. Goal 2 - skip-curve: route only the top-K synthesis-ranked recipes.
+  A. best searched-recipe area vs resyn2 at matched delay, per design.
+  B. skip-curve: route only the top-K synthesis-ranked recipes.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Rung 0 harness: harness(design, recipe) -> QoR (Quality of Results).
+"""The harness: harness(design, recipe) -> QoR (Quality of Results).
 
 Writes a classic-ABC recipe to a script file, runs the real ORFS ASAP7 (Arizona
 State University 7nm predictive Process Design Kit) flow with that recipe injected,

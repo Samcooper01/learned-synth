@@ -6,7 +6,7 @@ period (from results/clocks.json), and logs real post-route QoR (Quality of Resu
 for each. It produces two deliverables at once:
   1. the headline: per design, does any searched recipe beat resyn2 on area while
      meeting timing (iso-timing / matched-delay comparison)?
-  2. the dataset: (design, recipe) -> real QoR rows for training the Rung 3 predictor.
+  2. the dataset: (design, recipe) -> real QoR rows for training the QoR (Quality of Results) predictor.
 
 Every raw metric is logged, so the figure of merit or the comparison rule can change
 later without re-running anything.

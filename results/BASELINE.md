@@ -1,4 +1,4 @@
-# Rung 1: resyn2 baseline at real post-route sign-off
+# resyn2 baseline at real post-route sign-off
 
 Reference resyn2 recipe run through the full ORFS (OpenROAD Flow Scripts) ASAP7
 (Arizona State University 7nm predictive Process Design Kit) flow on the nine-design

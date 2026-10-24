@@ -1,6 +1,6 @@
-# Goal 1: does a searched recipe beat resyn2 at matched delay?
+# Random recipes versus resyn2 at matched delay
 
-The label factory ran resyn2 plus 25 random classic recipes through the full ORFS
+The sweep ran resyn2 plus 25 random classic recipes through the full ORFS
 (OpenROAD Flow Scripts) ASAP7 (Arizona State University 7nm predictive Process Design
 Kit) flow on all 9 corpus designs, every recipe at that design's fixed wall clock
 (resyn2 at Worst Negative Slack ~ 0; see `results/CLOCKS.md`). 234 clean routes, all 9
@@ -39,11 +39,11 @@ win (10 recipes beat resyn2), and ibex / riscv32i give honest non-winning result
 
 - **The win is real.** On gcd, jpeg, ethmac, mock-alu and mock-cpu a random classic
   recipe meets the same timing and uses less area than the hand-tuned resyn2.
-- **Where random fails maps the work for goal 2.** Two failure modes:
+- **Where random fails shows what comes next.** Two failure modes:
   1. *Tight designs* (aes 2, uart 4, ethmac 2, ibex 4, riscv32i 1 recipes meet
-     timing): the feasible region is small, so random rarely lands a legal recipe. A
-     predictor that ranks recipes before routing (goal 2) is exactly what finds legal,
-     better recipes here without brute force.
+     timing): the feasible region is small, so random rarely lands a legal recipe.
+     Finding one needs more candidates, which a predictor that ranks recipes before
+     routing ([PREDICTOR.md](PREDICTOR.md)) makes affordable.
   2. *Already-strong resyn2* (ibex): recipes meet timing but none beat area, so
      beating it needs directed search, not more random samples.
 - **riscv32i** is the noisy design: at its wall clock resyn2 itself sits at -9.4 ps,
@@ -52,7 +52,8 @@ win (10 recipes beat resyn2), and ibex / riscv32i give honest non-winning result
 
 ## So what
 
-resyn2 is beatable, even by random search, on the majority of the corpus. The
-project's actual contribution (goal 2) is the QoR (Quality of Results) predictor that
-guides the search to find legal recipes on the tight designs random cannot, and beat
-resyn2 where random cannot, while paying far fewer full routes than brute force.
+resyn2 is beatable, even by random search, on the majority of the corpus. The next
+steps are a cheap QoR (Quality of Results) predictor that ranks recipes before routing,
+so far fewer full routes are needed ([PREDICTOR.md](PREDICTOR.md)), and a directed
+search for the tight designs where random sampling found nothing
+([FLAGSHIP.md](FLAGSHIP.md)).

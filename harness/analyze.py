@@ -1,4 +1,4 @@
-"""Goal 1: the matched-delay leaderboard from the label-factory dataset.
+"""The matched-delay leaderboard from the 234-layout sweep dataset.
 
 Reads every results/labelsweep_*.jsonl, dedupes by (design, variant) preferring the
 successful route, and for each design compares the best timing-meeting recipe against

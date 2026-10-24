@@ -1,4 +1,4 @@
-"""Goal 2: a cheap QoR (Quality of Results) predictor that prunes the recipe search.
+"""A cheap QoR (Quality of Results) predictor that prunes the recipe search.
 
 The pitch: place-and-route is expensive; synthesis is cheap. If a cheap,
 synthesis-only signal predicts the post-route result, we can rank candidate recipes

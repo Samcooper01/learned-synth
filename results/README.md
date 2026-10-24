@@ -1,8 +1,6 @@
 # results
 
 The data and write-ups behind every number on the [project page](https://samcooper01.github.io/learned-synth/).
-The write-ups still use the project's original working labels (Goal 1, 2 and 3).
-
 | Write-up | What it covers | Page section |
 |---|---|---|
 | [RESULTS.md](RESULTS.md) | the reinforcement learning agent, graded on gate count and then on the real chip | 3, first attempt |
@@ -11,9 +9,9 @@ The write-ups still use the project's original working labels (Goal 1, 2 and 3).
 | [DESIGN_SET.md](DESIGN_SET.md) | which designs were used and why | 7, engineering |
 | [BASELINE.md](BASELINE.md) | `resyn2` on every design at its shipped clock | 7, engineering |
 | [CLOCKS.md](CLOCKS.md) | the iso-timing clock calibration, and why a looser clock does not help | 4 and 7 |
-| [HEADLINE.md](HEADLINE.md) | random recipes against `resyn2` on full layouts ("Goal 1") | 4, second attempt |
-| [PREDICTOR.md](PREDICTOR.md) | post-synthesis area as a cheap ranking score ("Goal 2") | 5, the cost |
-| [FLAGSHIP.md](FLAGSHIP.md) | the genetic-algorithm search ("Goal 3") | 6, the final method |
+| [HEADLINE.md](HEADLINE.md) | random recipes against `resyn2` on full layouts | 4, second attempt |
+| [PREDICTOR.md](PREDICTOR.md) | post-synthesis area as a cheap ranking score | 5, the cost |
+| [FLAGSHIP.md](FLAGSHIP.md) | the genetic-algorithm search | 6, the final method |
 
 ## Data files
 

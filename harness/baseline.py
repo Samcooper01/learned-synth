@@ -1,4 +1,4 @@
-"""Rung 1: the resyn2 baseline across the route corpus, at real sign-off.
+"""The resyn2 baseline across the route corpus, at real sign-off.
 
 Runs the reference resyn2 recipe through the FULL ORFS (OpenROAD Flow Scripts) flow
 (synthesis plus place-and-route to finish) on each design and records post-route QoR

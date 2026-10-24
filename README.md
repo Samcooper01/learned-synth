@@ -1,5 +1,7 @@
 # learned-synth
 
+[![tests](https://github.com/Samcooper01/learned-synth/actions/workflows/tests.yml/badge.svg)](https://github.com/Samcooper01/learned-synth/actions/workflows/tests.yml)
+
 **Is the standard recipe for open-source logic synthesis good enough? For most
 designs, it can be improved: on 6 of 9 designs, a recipe chosen for that design beats
 the standard recipe, `resyn2`, with up to 5.8% less chip area at the same clock speed,
@@ -92,6 +94,7 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 | `harness/` `aig*`, `rl_env`, `train_rl`, `eval_policy`, `gnn_*`, `picker` | the earlier machine-learning studies |
 | `results/` | every data file and write-up |
 | `models/` | trained weights from the machine-learning studies |
+| `tests/` | unit tests for the parts that run without the chip flow |
 
 ## Reproduce
 
@@ -109,6 +112,8 @@ python3 predict_qor.py
 python3 flagship_search.py --designs riscv32i aes uart ibex --pop 20 --gens 12
 python3 make_figure.py
 ```
+
+The unit tests need no chip flow: `python3 -m unittest discover tests`.
 
 ## Limitations
 

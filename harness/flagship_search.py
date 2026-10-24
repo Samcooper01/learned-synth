@@ -1,6 +1,6 @@
-"""Goal 3 (flagship): directed recipe search with a cheap synthesis-only fitness.
+"""Directed recipe search (genetic algorithm) with a cheap synthesis-only fitness.
 
-Random search (Goal 1) beats resyn2 on some designs but samples blindly. This runs a
+Random search (results/HEADLINE.md) beats resyn2 on some designs but samples blindly. This runs a
 genetic algorithm over ABC (And-Inverter Graph optimizer) recipes, scored by the
 cheap post-synthesis cell area (which predicts routed area at Spearman ~0.8 and, on the
 tight designs, is smaller for timing-legal recipes). Synthesis is seconds per design

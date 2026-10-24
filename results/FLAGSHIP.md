@@ -1,7 +1,7 @@
-# Goal 3 (flagship): directed recipe search
+# Directed recipe search with a genetic algorithm
 
-Random search (Goal 1) beats resyn2 on some designs by luck; the Goal 2 predictor
-prunes the search cheaply. Goal 3 asks whether a *directed* search can beat resyn2 on
+Random search ([HEADLINE.md](HEADLINE.md)) beats resyn2 on some designs by luck; the
+predictor ([PREDICTOR.md](PREDICTOR.md)) prunes the search cheaply. This study asks whether a *directed* search can beat resyn2 on
 the tight designs where random found nothing legal - the designs where the feasible
 region is small.
 
@@ -26,7 +26,7 @@ Targeted the 4 tight designs where random search found no win.
 **The win (riscv32i).** resyn2 itself misses timing at riscv32i's wall clock, and
 random search found no legal recipe better than resyn2. Directed search found a recipe
 that **both meets timing (WNS +11.5) and has smaller area (2661.8 vs 2683.7)** - a
-legal solution where both resyn2 and random failed. That is the flagship's point:
+legal solution where both resyn2 and random failed. That is the point of directed search:
 directed search reaches a good corner of the recipe space that blind sampling misses.
 
 ## The honest finding (aes, uart, ibex)
@@ -36,7 +36,7 @@ On aes and uart its best picks were smaller than resyn2 (about 5% on aes, 4.6% o
 uart), but on ibex they were not smaller at all (0.2% larger). On aes the best pick
 traded resyn2's +1.3 ps slack for -3.6 ps, a near miss of under 1% of the clock. Minimizing area alone overshoots
 into timing violation on timing-tight designs. Post-synth area is a good ranker among
-already-legal recipes (Goal 2), but a poor *objective* to minimize freely, because the
+already-legal recipes ([PREDICTOR.md](PREDICTOR.md)), but a poor *objective* to minimize freely, because the
 smallest-area restructurings are often the slowest.
 
 The fix is a **timing-aware fitness**: minimize area subject to meeting timing, i.e.

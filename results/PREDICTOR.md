@@ -1,7 +1,7 @@
-# Goal 2: a cheap QoR predictor that prunes the recipe search
+# A cheap QoR (Quality of Results) predictor that prunes the recipe search
 
-Goal 1 showed a searched recipe can beat resyn2, but finding one by brute force means
-a full place-and-route per candidate. Goal 2 is the project's differentiator: a
+The random-recipe study ([HEADLINE.md](HEADLINE.md)) showed a searched recipe can beat resyn2, but finding one by brute force means
+a full place-and-route per candidate. This study is the project's differentiator: a
 cheap predictor that ranks candidates so we pay for a full route on only the best few.
 
 Reproduce with `python3 harness/predict_qor.py` on the 234-route dataset.
@@ -71,6 +71,6 @@ result the project set out to demonstrate.
 
 ## So what
 
-Combined with Goal 1 (resyn2 is beatable on 5/9 designs), Goal 2 shows the search is
+Combined with the random-recipe result (resyn2 is beatable on 5/9 designs), this shows the search is
 cheap to run: a synthesis-only ranker turns "route all 26 candidates" into "route the
 best 3," an ~88% cut in place-and-route cost at ~90% of the benefit.
