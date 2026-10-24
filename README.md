@@ -96,8 +96,8 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 ## Reproduce
 
 Needs [OpenROAD Flow Scripts](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts)
-with the ASAP7 platform (point `LEARNED_SYNTH_ORFS` at it), plus `numpy` and
-`matplotlib`. From `harness/`, run in order:
+with the ASAP7 platform (point `LEARNED_SYNTH_ORFS` at it), plus the Python packages in
+[requirements.txt](requirements.txt). From `harness/`, run in order:
 
 ```bash
 python3 probe_designs.py

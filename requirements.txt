@@ -1,0 +1,12 @@
+# Python packages. The flow itself (OpenROAD Flow Scripts with the ASAP7 platform)
+# is installed separately; see the README.
+
+# Core pipeline: patch, harness, sweeps, analysis, charts
+numpy>=2.2
+matplotlib>=3.10
+
+# Earlier machine-learning studies: reinforcement learning agent, graph neural network
+gymnasium>=1.3
+stable-baselines3>=2.9
+torch>=2.13
+torch-geometric>=2.8
