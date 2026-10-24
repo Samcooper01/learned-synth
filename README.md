@@ -95,19 +95,19 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 
 ## Reproduce
 
-Requires an OpenROAD-flow-scripts checkout with the ASAP7 platform (set `LEARNED_SYNTH_ORFS`, or edit
-`patch_orfs.DEFAULT_ORFS`), plus `numpy` and `matplotlib`.
+Needs [OpenROAD Flow Scripts](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts)
+with the ASAP7 platform (point `LEARNED_SYNTH_ORFS` at it), plus `numpy` and
+`matplotlib`. From `harness/`, run in order:
 
 ```bash
-cd harness
-python3 probe_designs.py            # which designs synthesize cleanly
-python3 baseline.py                 # resyn2 baseline (full flow)
-python3 calibrate_clocks.py         # matched-timing clocks -> results/clocks.json
-python3 labelsweep.py --n 25 --force-classic-abc   # the 234 layouts
-python3 analyze.py                  # the leaderboard
-python3 predict_qor.py              # the cheap score and the skip curve
-python3 flagship_search.py --designs riscv32i --pop 20 --gens 12 --verify-k 3   # directed search
-python3 make_figure.py              # regenerate the charts in docs/
+python3 probe_designs.py
+python3 baseline.py
+python3 calibrate_clocks.py
+python3 labelsweep.py --n 25 --force-classic-abc
+python3 analyze.py
+python3 predict_qor.py
+python3 flagship_search.py --designs riscv32i aes uart ibex --pop 20 --gens 12
+python3 make_figure.py
 ```
 
 ## Limitations
