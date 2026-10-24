@@ -48,17 +48,17 @@ technology, instead of on the usual gate-count shortcut.
 
 ## Results
 
-| Design | Size (cells) | Best recipe versus `resyn2` | Found by |
+| Design | Size (cells) | Best recipe versus `resyn2` |
 |---|---|---|---|
-| gcd | ~400 | 5.8% less area | random sample |
-| jpeg | ~58,000 | 2.2% less area | random sample |
-| ethmac | ~56,000 | 2.1% less area | random sample |
-| riscv32i | ~8,600 | 0.8% less area, and meets timing where `resyn2` misses | directed search |
-| mock-alu | ~11,000 | 0.7% less area, and meets timing where `resyn2` misses | random sample |
-| mock-cpu | ~39,000 | 0.2% less area | random sample |
-| aes | ~14,000 | no better recipe (a near miss: 5% smaller, under 1% of the clock late) | - |
-| uart | ~750 | no better recipe | - |
-| ibex | ~17,000 | no better recipe | - |
+| gcd | ~400 | 5.8% less area |
+| jpeg | ~58,000 | 2.2% less area |
+| ethmac | ~56,000 | 2.1% less area |
+| riscv32i | ~8,600 | 0.8% less area, and meets timing where `resyn2` misses |
+| mock-alu | ~11,000 | 0.7% less area, and meets timing where `resyn2` misses |
+| mock-cpu | ~39,000 | 0.2% less area |
+| aes | ~14,000 | no better recipe (a near miss: 5% smaller, under 1% of the clock late) |
+| uart | ~750 | no better recipe |
+| ibex | ~17,000 | no better recipe |
 
 Every number comes from a full layout to sign-off at each design's iso-timing
 clock: a recipe counts as better only if it meets timing and uses less area than
