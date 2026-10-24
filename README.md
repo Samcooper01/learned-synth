@@ -8,7 +8,7 @@ verified by full chip layouts.**
 <p align="center">
   <a href="https://samcooper01.github.io/learned-synth/"><img src="docs/banner.png" width="800" alt="Project page: Is the standard recipe for open-source logic synthesis good enough? A better recipe on 6 of 9 designs. Read the walkthrough."></a>
   <br>
-  <b><a href="https://samcooper01.github.io/learned-synth/">&#8594; Read the full walkthrough on the project page</a></b>
+  <b><a href="https://samcooper01.github.io/learned-synth/">&#8594; Read the full walkthrough</a></b>
 </p>
 
 Logic synthesis optimizes a design's logic one small step at a time, following a
