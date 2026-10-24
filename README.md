@@ -112,32 +112,19 @@ python3 make_figure.py              # regenerate the charts in docs/
 
 ## Limitations
 
-- **Area is only half of the bar.** The directed search scores recipes by area alone,
-  so on timing-tight designs its smallest recipes tend to miss timing.
-- **One run per search.** Each directed search ran once, with one random seed, and
-  random sampling was never given the same budget of about 180 scored recipes.
-- **Nine designs.** Enough to find a better recipe for each design, but not to predict
-  a good recipe for a brand-new design: the graph neural network only generalized to
-  structures it had trained on.
-- **riscv32i is noisy** at its matched clock (many near-critical paths), so its
-  comparison is the least clean of the nine.
+- The search optimizes area only, so its smallest recipes tend to miss timing.
+- Each search ran once, and random sampling never got the same budget.
+- Nine designs are too few to predict a good recipe for a brand-new design.
+- riscv32i's timing is noisy, so its result is the least clean.
 
 ## Future work
 
-1. **Close the near misses** with extra timing repair during layout (for both the new
-   recipe and `resyn2`): aes is late by under 1% of the clock with 5% area to spare.
-2. **Strengthen the evidence:** repeat each search with different seeds, give random
-   sampling the same budget, and lay out each winner at slightly different clocks.
-3. **Score timing as well as area.** The flow does not report timing after synthesis
-   today; OpenROAD's timing analysis on the synthesized netlist, the optimizer's own
-   delay estimate, or logic depth could provide one, once shown to track the result
-   after layout.
-4. **Let layouts teach the search** by running a few during the search, not only at
-   the end.
-5. **Learn a policy** with reinforcement learning, rewarded by the real sign-off result
-   rather than by gate count.
-6. **Grow the design set**, starting with the two large processor cores held out for
-   layout time.
+1. Close near misses like aes with extra timing repair.
+2. Repeat each search with more seeds and an equal-budget random baseline.
+3. Add a post-synthesis timing estimate to the search score.
+4. Run some layouts during the search, not only at the end.
+5. Train a reinforcement learning policy on the real sign-off result.
+6. Add more designs.
 
 ## Design detail: where the first logic graph comes from
 
