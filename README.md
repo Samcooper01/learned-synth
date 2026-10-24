@@ -2,8 +2,8 @@
 
 **Is the standard recipe for open-source logic synthesis good enough? For most
 designs, it can be improved: on 6 of 9 designs, a recipe chosen for that design beats
-`resyn2`, with up to 5.8% less chip area at the same clock speed, verified by full chip
-layouts.**
+the standard recipe, `resyn2`, with up to 5.8% less chip area at the same clock speed,
+verified by full chip layouts.**
 
 **Project page (the walkthrough, with diagrams):** https://samcooper01.github.io/learned-synth/
 
@@ -20,30 +20,34 @@ technology, instead of on the usual gate-count shortcut.
 
 ## The project in brief
 
-The project page tells this story in eight sections. In short:
-
-1. **First attempt: machine learning on a shortcut score.** A reinforcement learning
-   agent, a graph neural network that reads the logic graph, and a picker driven by
-   that network were all trained or scored on gate count, which takes milliseconds.
-   They got better at gate count, but on a real chip the shortcut did not hold up, and
-   the best of 60 random recipes beat the agent even on gate count.
+1. **Machine learning on a proxy metric.** A PPO (Proximal Policy Optimization)
+   reinforcement learning agent and a GNN (Graph Neural Network) surrogate model over
+   the AIG (And-Inverter Graph) were trained against AIG (And-Inverter Graph) node
+   count, the usual proxy metric in recipe-learning work. Both learned to optimize the
+   proxy, but post-route QoR (Quality of Results) disagreed with it, a random-search
+   baseline outperformed the policy even on the proxy, and a GNN (Graph Neural
+   Network)-guided greedy policy stalled where direct measurement did not.
    Write-ups: [results/RESULTS.md](results/RESULTS.md),
    [results/GNN_STUDY.md](results/GNN_STUDY.md),
    [results/PICKER_STUDY.md](results/PICKER_STUDY.md).
-2. **Second attempt: grade on the real chip, one design at a time.** Graded on full
-   layouts at matched timing, a sample of 25 random recipes beat `resyn2` on 5 of 9
-   designs, with up to 5.8% less area.
+2. **Sign-off-graded design space exploration.** Every candidate recipe runs the full
+   RTL (Register Transfer Level)-to-sign-off flow (synthesis, placement, CTS (Clock
+   Tree Synthesis), routing) at an iso-timing operating point: a per-design clock
+   constraint calibrated so `resyn2` sits at near-zero slack. Random sampling of 25 recipes
+   per design beats `resyn2` on 5 of 9 designs, with up to 5.8% area reduction.
    Write-ups: [results/HEADLINE.md](results/HEADLINE.md),
    [results/CLOCKS.md](results/CLOCKS.md).
-3. **The cost: a quick estimate.** Post-synthesis cell area takes seconds to measure
-   and tracks area after layout (rank correlation 0.79). Laying out only the top 3 of
-   26 candidates captures 89% of the available area gain.
+3. **A low-cost QoR (Quality of Results) predictor for search pruning.**
+   Post-synthesis cell area, available in seconds, predicts post-route area with a
+   Spearman rank correlation of 0.79. Routing only the top 3 of 26 candidates recovers
+   89% of the achievable area gain while skipping 88% of place-and-route runs.
    Write-up: [results/PREDICTOR.md](results/PREDICTOR.md).
-4. **The final method: steer the search with the cheap score.** A genetic algorithm
-   scored about 180 recipes per design by post-synthesis area, in 2 to 10 minutes,
-   then laid out its top 3. On riscv32i it found a recipe that meets timing where
-   `resyn2` misses, with 0.8% less area. On aes it found a near miss: 5% smaller, but
-   late by under 1% of the clock.
+4. **Surrogate-guided evolutionary search.** A genetic algorithm (elitism, tournament
+   selection, crossover, mutation) uses the post-synthesis surrogate as its fitness
+   function, about 180 evaluations per design in 2 to 10 minutes, and verifies the top
+   3 candidates post-route. It achieves timing closure on riscv32i, where `resyn2` has
+   negative slack, with a 0.8% area reduction, and a near miss on aes: 5% area
+   reduction with negative slack under 1% of the clock period.
    Write-up: [results/FLAGSHIP.md](results/FLAGSHIP.md).
 
 | Design | Size (cells) | Best recipe versus `resyn2` | Found by |
