@@ -1,7 +1,7 @@
 # Goal 2: a cheap QoR predictor that prunes the recipe search
 
 Goal 1 showed a searched recipe can beat resyn2, but finding one by brute force means
-a full place-and-route per candidate. Goal 2 is the differentiator from `PLAN.md`: a
+a full place-and-route per candidate. Goal 2 is the project's differentiator: a
 cheap predictor that ranks candidates so we pay for a full route on only the best few.
 
 Reproduce with `python3 harness/predict_qor.py` on the 234-route dataset.

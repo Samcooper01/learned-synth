@@ -14,7 +14,7 @@ over.
 > is what FlowTune and DRiLLS use. So `resyn2` below is best read as the **classic
 > reference recipe and baseline** our search space is built around, not as the
 > string ORFS runs out of the box. See
-> [harness-and-sweeps.md](harness-and-sweeps.md) for how a searched classic recipe
+> [harness/README.md](../harness/README.md) for how a searched classic recipe
 > is injected into the flow.
 
 ## 1. Where synthesis sits in the whole flow
@@ -181,5 +181,4 @@ it is our baseline. Instead of one recipe for every design, we search that space
 downstream QoR (Quality of Results) rather than on the AIG (And-Inverter Graph)
 proxy. The searched optimization sequence is sandwiched between a fixed `strash`
 prologue and a fixed mapping epilogue so the netlist stays valid for OpenROAD. See
-[harness-and-sweeps.md](harness-and-sweeps.md) for the injection mechanism and
-[../PLAN.md](../PLAN.md) for the full ladder from harness to learned policy.
+[harness/README.md](../harness/README.md) for the injection mechanism.

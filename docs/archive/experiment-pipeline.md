@@ -232,7 +232,7 @@ flowchart TD
 
 ## Where this maps in the plan
 
-This document is the experimental method for Rungs 2 through 4 of
-[../PLAN.md](../PLAN.md): FlowTune is the Rung 2 search, the GNN (Graph Neural
+This document is the experimental method for Rungs 2 through 4 of the original
+project plan (since removed): FlowTune is the Rung 2 search, the GNN (Graph Neural
 Network) surrogate is Rung 3, and the RL (Reinforcement Learning) policy is Rung 4.
 The head-to-head between them is the headline result of the project.

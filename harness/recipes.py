@@ -3,7 +3,7 @@
 A recipe is the SEARCHED optimization middle only. The harness wraps it with a
 fixed prologue (build the AIG) and a fixed epilogue (map to standard cells and
 finish) so the netlist stays valid for OpenROAD and every comparison is
-apples-to-apples. See docs/harness-and-sweeps.md.
+apples-to-apples. See harness/README.md.
 """
 
 from __future__ import annotations

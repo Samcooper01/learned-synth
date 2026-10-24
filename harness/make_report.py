@@ -113,7 +113,7 @@ def main():
               "results/DESIGN_SET.md); the current real-QoR results are in "
               "results/HEADLINE.md and results/PREDICTOR.md.",
               "- resyn2 is the classic-command baseline. The modern GIA flow ORFS "
-              "ships is a stronger external bar (see docs/harness-and-sweeps.md).\n"]
+              "ships is a stronger external bar (see docs/archive/harness-and-sweeps.md).\n"]
 
     os.makedirs(RESULTS, exist_ok=True)
     out = os.path.join(RESULTS, "RESULTS.md")

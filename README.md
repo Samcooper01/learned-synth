@@ -1,141 +1,179 @@
 # learned-synth
 
-**Searching for logic-synthesis recipes that beat `resyn2`, the standard recipe of
-this flow's logic optimizer, graded on real chip sign-off (post-place-and-route), not
-proxy metrics.**
+**Is the standard recipe for open-source logic synthesis good enough? For most
+designs, it can be improved: on 6 of 9 designs, a recipe chosen for that design beats
+`resyn2`, with up to 5.8% less chip area at the same clock speed, verified by full chip
+layouts.**
 
 **Project page (the walkthrough, with diagrams):** https://samcooper01.github.io/learned-synth/
 
-The open RTL (Register Transfer Level) to layout flow optimizes every design's logic
-with one fixed recipe of ABC (And-Inverter Graph optimizer) transforms, the same for a
-tiny controller and a large processor. `resyn2` is the standard hand-tuned recipe
-that ships with ABC (And-Inverter Graph optimizer), built from the same classic
-transforms this project searches over, so it is the baseline every result is compared
-against. This project searches for a better per-design transformation sequence and measures the
-payoff where it actually counts: post-detailed-route area at matched timing, produced
-by the real OpenROAD flow on the ASAP7 (Arizona State University 7nm predictive
-Process Design Kit) platform.
+Logic synthesis optimizes a design's logic one small step at a time, following a
+recipe. Yosys hands this job to ABC (And-Inverter Graph optimizer), and the recipe
+never changes: a tiny controller and a large processor get exactly the same steps.
+`resyn2` is the standard hand-tuned recipe that ships with ABC (And-Inverter Graph
+optimizer). This project builds new recipes from the same classic transforms and
+grades every result on a full chip layout through sign-off, with the open OpenROAD
+flow on the ASAP7 (Arizona State University 7nm predictive Process Design Kit)
+technology, instead of on the usual gate-count shortcut.
 
 ![results](docs/results.png)
 
-## Headline results
+## The project in brief
 
-Measured on 9 designs (gcd, uart, aes, ibex, jpeg, ethmac, riscv32i, mock-alu,
-mock-cpu), every recipe run through the full flow at each design's matched-delay
-clock, 234 clean place-and-route runs.
+The project page tells this story in eight sections. In short:
 
-- **Goal 1 - `resyn2` is beatable.** A searched recipe beats `resyn2` on **5 of 9
-  designs, by up to 5.8% cell area at matched delay** (real post-route sign-off), with
-  pure random search. resyn2 is not optimal per design. See
-  [results/HEADLINE.md](results/HEADLINE.md).
-- **Goal 2 - the search is cheap.** A recipe's post-synthesis area predicts its
-  post-route area strongly (Spearman +0.79 within a design), so recipes can be ranked
-  after cheap synthesis and only the best few sent to full routing. **Routing only the
-  top-3 of 26 candidates recovers 89% of the achievable area gain while skipping 88%
-  of the place-and-route runs.** See [results/PREDICTOR.md](results/PREDICTOR.md).
-- **Goal 3 (flagship) - directed search reaches recipes random misses.** A genetic
-  algorithm over recipes with a cheap synthesis-only fitness found, on **riscv32i**, a
-  recipe that **meets timing where resyn2 itself fails** and uses less area - a legal
-  solution neither resyn2 nor random search reached. It also surfaced an honest limit:
-  a pure area objective overshoots into timing violation on the other tight designs, so
-  the search needs a timing-aware fitness (the concrete next step). See
-  [results/FLAGSHIP.md](results/FLAGSHIP.md).
+1. **First attempt: machine learning on a shortcut score.** A reinforcement learning
+   agent, a graph neural network that reads the logic graph, and a picker driven by
+   that network were all trained or scored on gate count, which takes milliseconds.
+   They got better at gate count, but on a real chip the shortcut did not hold up, and
+   the best of 60 random recipes beat the agent even on gate count.
+   Write-ups: [results/RESULTS.md](results/RESULTS.md),
+   [results/GNN_STUDY.md](results/GNN_STUDY.md),
+   [results/PICKER_STUDY.md](results/PICKER_STUDY.md).
+2. **Second attempt: grade on the real chip, one design at a time.** Graded on full
+   layouts at matched timing, a sample of 25 random recipes beat `resyn2` on 5 of 9
+   designs, with up to 5.8% less area.
+   Write-ups: [results/HEADLINE.md](results/HEADLINE.md),
+   [results/CLOCKS.md](results/CLOCKS.md).
+3. **The cost: a quick estimate.** Post-synthesis cell area takes seconds to measure
+   and tracks area after layout (rank correlation 0.79). Laying out only the top 3 of
+   26 candidates captures 89% of the available area gain.
+   Write-up: [results/PREDICTOR.md](results/PREDICTOR.md).
+4. **The final method: steer the search with the cheap score.** A genetic algorithm
+   scored about 180 recipes per design by post-synthesis area, in 2 to 10 minutes,
+   then laid out its top 3. On riscv32i it found a recipe that meets timing where
+   `resyn2` misses, with 0.8% less area. On aes it found a near miss: 5% smaller, but
+   late by under 1% of the clock.
+   Write-up: [results/FLAGSHIP.md](results/FLAGSHIP.md).
 
-## Why this is the interesting version of the problem
+| Design | Size (cells) | Best recipe versus `resyn2` | Found by |
+|---|---|---|---|
+| gcd | ~400 | 5.8% less area | random sample |
+| jpeg | ~58,000 | 2.2% less area | random sample |
+| ethmac | ~56,000 | 2.1% less area | random sample |
+| riscv32i | ~8,600 | 0.8% less area, and meets timing where `resyn2` misses | directed search |
+| mock-alu | ~11,000 | 0.7% less area, and meets timing where `resyn2` misses | random sample |
+| mock-cpu | ~39,000 | 0.2% less area | random sample |
+| aes | ~14,000 | no better recipe (a near miss: 5% smaller, under 1% of the clock late) | - |
+| uart | ~750 | no better recipe | - |
+| ibex | ~17,000 | no better recipe | - |
 
-Almost all recipe-learning work grades on AIG (And-Inverter Graph) node count and
-logic depth, because the authors have no downstream flow. Grading on real
-post-technology-mapping and post-route Quality of Results (QoR) is the differentiator,
-and it changes the answer: the project's own earlier proxy-only study is kept as
-[prior work](results/RESULTS.md) precisely to show the gap. The open OpenROAD plus
-ASAP7 flow turns into a label factory that emits exactly the sign-off signal the field
-usually lacks.
+Every number comes from a full layout to sign-off at each design's matched-timing
+clock: a recipe counts as better only if it meets timing and uses less area than
+`resyn2` on the finished layout.
 
 ## How it works
 
-1. **Recipe injection ([harness/patch_orfs.py](harness/patch_orfs.py)).** A reversible
-   one-line patch makes the flow honor an `ABC_SCRIPT` override, so any recipe is just
-   a text file fed to the classic `abc -script` path. (Three designs route through a
-   newer `abc_new` path that ignores the override; `--force-classic-abc` keeps them on
-   the classic path - see [results/HEADLINE.md](results/HEADLINE.md).)
+1. **Running any recipe in the real flow ([harness/patch_orfs.py](harness/patch_orfs.py)).**
+   A small, reversible patch makes the flow take any recipe file. A fixed opening step
+   builds the logic graph, the searched middle is the list of transforms, and a fixed
+   closing sequence maps the logic onto real library cells, so every comparison is like
+   for like.
 2. **The harness ([harness/harness.py](harness/harness.py)).** `run_recipe(design,
-   recipe)` runs the full flow and scrapes post-route area, timing, and power into one
-   record. Everything else is a loop over this.
-3. **Matched-delay clocks ([harness/calibrate_clocks.py](harness/calibrate_clocks.py)).**
-   To compare area fairly, each design's clock is calibrated so `resyn2` sits at its
-   timing wall (Worst Negative Slack near zero). Area is only comparable at a common
-   timing bar. Loosening the clock does not help: the tool simply optimizes less and
-   the delay grows to fill the slack ([results/CLOCKS.md](results/CLOCKS.md)).
-4. **The label factory ([harness/labelsweep.py](harness/labelsweep.py)).** For each
-   design, `resyn2` plus 25 random recipes are run through the full flow at the
-   matched-delay clock, logging real QoR per recipe. This is both the Goal 1
-   leaderboard and the Goal 2 training data.
-5. **The predictor ([harness/predict_qor.py](harness/predict_qor.py)).** A cheap,
-   synthesis-only signal ranks recipes so only the top few are routed.
-
-There is also a load-aware runner ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py))
-that sizes route concurrency to available memory, so the sweeps can share a machine
-with other jobs without thrashing.
+   recipe)` runs the full flow and records area, timing and power. Each recipe runs in
+   its own output folder named from a fingerprint of its steps, and the raw
+   measurements are kept so the definition of a win can change without re-running.
+3. **Choosing the designs ([harness/probe_designs.py](harness/probe_designs.py)).** All
+   12 example designs for this technology synthesize. aes-block fails floorplanning even
+   in the unmodified flow, and the two largest processor cores were held out for layout
+   time, leaving 9 designs from 418 to 58,336 cells
+   ([results/DESIGN_SET.md](results/DESIGN_SET.md)).
+4. **Matched-timing clocks ([harness/calibrate_clocks.py](harness/calibrate_clocks.py)).**
+   At their shipped clocks, 6 of the 9 designs missed timing, which makes raw area
+   unfair to compare. Each design's clock is calibrated by repeated full layouts to the
+   fastest clock at which `resyn2` still just meets timing. A looser clock does not
+   help: the tools stop working as hard and the slack disappears
+   ([results/CLOCKS.md](results/CLOCKS.md)).
+5. **The 234 layouts ([harness/labelsweep.py](harness/labelsweep.py)).** For each
+   design, `resyn2` plus 25 random recipes run through the full flow at the matched
+   clock: about 79 hours of compute in total, from about a minute per layout (uart) to
+   about an hour (ethmac).
+6. **A silent bug, caught.** On ibex, mock-alu and riscv32i every recipe first gave
+   exactly the same area: their settings sent synthesis down a newer code path that
+   ignores the recipe. `--force-classic-abc` keeps them on the classic path, after which
+   mock-alu became a real win ([results/HEADLINE.md](results/HEADLINE.md)).
+7. **Sharing one machine ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py)).**
+   Each layout needs about 3.6 gigabytes of memory at its peak. The runner starts another
+   layout only when one more fits in free memory above a reserve, staggers launches,
+   never stops a running layout, and skips finished layouts when restarted.
+8. **The cheap score and the directed search
+   ([harness/predict_qor.py](harness/predict_qor.py),
+   [harness/flagship_search.py](harness/flagship_search.py)).** The search runs 12
+   rounds of 20 recipes, scored by synthesis only, and lays out its top 3 once at the
+   end.
 
 ## Repository map
 
-| path | what |
+| Path | What |
 |---|---|
-| `harness/harness.py` | `run_recipe(design, recipe) -> real post-route QoR` |
-| `harness/recipes.py` | classic-ABC recipe representation + random generator |
-| `harness/patch_orfs.py` | reversible `ABC_SCRIPT` override into the flow |
-| `harness/probe_designs.py` | which designs synthesize cleanly (design curation) |
-| `harness/baseline.py` | `resyn2` baseline across the corpus (Rung 1) |
-| `harness/calibrate_clocks.py` | per-design matched-delay clock calibration |
-| `harness/labelsweep.py` | the label factory: recipes -> real QoR |
-| `harness/analyze.py` | Goal 1 matched-delay leaderboard |
-| `harness/predict_qor.py` | Goal 2 predictor + route-budget skip-curve |
-| `harness/flagship_search.py` | Goal 3 directed (genetic-algorithm) recipe search |
-| `harness/make_figure.py` | the results figure above |
-| `results/DESIGN_SET.md`, `BASELINE.md`, `CLOCKS.md` | corpus, baseline, clock calibration |
-| `results/HEADLINE.md`, `PREDICTOR.md`, `FLAGSHIP.md` | the Goal 1, 2, and 3 results |
-| `results/RESULTS.md`, `GNN_STUDY.md`, `PICKER_STUDY.md` | prior proxy-metric studies |
+| `docs/index.html` | the project page (served by GitHub Pages), with its images |
+| `docs/default-abc-flow.md` | walkthrough of the default flow and the `resyn2` recipe |
+| `docs/archive/` | early planning documents, kept for provenance |
+| `harness/harness.py` | `run_recipe(design, recipe)`: one recipe through the full flow |
+| `harness/recipes.py` | the recipe representation, `resyn2`, and the random-recipe generator |
+| `harness/patch_orfs.py` | reversible patch so the flow accepts a recipe file |
+| `harness/probe_designs.py`, `baseline.py`, `calibrate_clocks.py` | design selection, the `resyn2` baseline, matched-timing clocks |
+| `harness/labelsweep.py`, `loadmanaged_rerun.py`, `analyze.py` | the 234 layouts, the memory-aware runner, the leaderboard |
+| `harness/predict_qor.py`, `flagship_search.py` | the cheap score and the directed search |
+| `harness/make_figure.py` | the charts on the page and in this README |
+| `harness/aig.py`, `rl_env.py`, `train_rl.py`, `eval_policy.py`, `overnight.sh` | the first attempt: reinforcement learning on gate count |
+| `harness/aig_graph.py`, `gnn_data.py`, `gnn_train.py`, `gnn_run.sh`, `picker.py`, `microbench/` | the first attempt: the graph neural network and the picker |
+| `results/` | every result file and write-up linked above |
+| `models/` | the trained agent and graph-network weights from the first attempt |
 
 ## Reproduce
 
-Requires an OpenROAD-flow-scripts checkout with the ASAP7 platform (set
-`LEARNED_SYNTH_ORFS`, or edit `patch_orfs.DEFAULT_ORFS`), plus `numpy` and
-`matplotlib`.
+Requires an OpenROAD-flow-scripts checkout with the ASAP7 (Arizona State University
+7nm predictive Process Design Kit) platform (set `LEARNED_SYNTH_ORFS`, or edit
+`patch_orfs.DEFAULT_ORFS`), plus `numpy` and `matplotlib`.
 
 ```bash
 cd harness
 python3 probe_designs.py            # which designs synthesize cleanly
 python3 baseline.py                 # resyn2 baseline (full flow)
-python3 calibrate_clocks.py         # matched-delay clocks -> results/clocks.json
-python3 labelsweep.py --n 25 --force-classic-abc   # the label factory
-python3 analyze.py                  # Goal 1 leaderboard
-python3 predict_qor.py              # Goal 2 predictor + skip-curve
-python3 flagship_search.py --designs riscv32i --pop 20 --gens 12 --verify-k 3   # Goal 3 directed search
-python3 make_figure.py              # regenerate docs/results.png
+python3 calibrate_clocks.py         # matched-timing clocks -> results/clocks.json
+python3 labelsweep.py --n 25 --force-classic-abc   # the 234 layouts
+python3 analyze.py                  # the leaderboard
+python3 predict_qor.py              # the cheap score and the skip curve
+python3 flagship_search.py --designs riscv32i --pop 20 --gens 12 --verify-k 3   # directed search
+python3 make_figure.py              # regenerate the charts in docs/
 ```
 
-## Honest limitations
+## Limitations
 
-- **The predictor prunes; it does not invent wins.** On tight designs where no random
-  recipe beats `resyn2`, there is no gain for the ranker to capture. The Goal 3 directed
-  search (see [results/FLAGSHIP.md](results/FLAGSHIP.md)) does reach a legal win on
-  riscv32i that random missed, but its area-only objective overshoots timing on the
-  other tight designs. The concrete next step is a timing-aware fitness (minimize area
-  subject to meeting timing), which needs a cheap post-synthesis slack signal the open
-  flow does not currently expose, and then a reinforcement-learning policy over the
-  recipe space with a sign-off-graded, timing-aware reward.
-- **9 designs is enough for per-design results, thin for cross-design generalization.**
-  The signal lives in what a recipe does to a specific netlist, not in the recipe
-  string, so predicting for a brand-new design would need a much larger design corpus.
-- **riscv32i** is noisy at its timing wall (many balanced critical paths), so its
-  matched-delay comparison is the least clean of the nine.
+- **Area is only half of the bar.** The directed search scores recipes by area alone,
+  so on timing-tight designs its smallest recipes tend to miss timing.
+- **One run per search.** Each directed search ran once, with one random seed, and
+  random sampling was never given the same budget of about 180 scored recipes.
+- **Nine designs.** Enough to find a better recipe for each design, but not to predict
+  a good recipe for a brand-new design: the graph neural network only generalized to
+  structures it had trained on.
+- **riscv32i is noisy** at its matched clock (many near-critical paths), so its
+  comparison is the least clean of the nine.
 
-## Design detail: where the first AIG comes from
+## Future work
 
-Yosys parses and bit-blasts the RTL and hands the entire combinational network to
-ABC (And-Inverter Graph optimizer); ABC builds the AIG (And-Inverter Graph) via
-structural hashing and runs the recipe on it. The starting AIG depends on how Yosys
-pre-optimized upstream, so the Yosys front-end script is held fixed across recipes,
-and registers are excluded (the recipe reshapes combinational logic between
-flip-flops). See [docs/default-abc-flow.md](docs/default-abc-flow.md) and
-[docs/harness-and-sweeps.md](docs/harness-and-sweeps.md) for the full walkthrough.
+1. **Close the near misses** with extra timing repair during layout (for both the new
+   recipe and `resyn2`): aes is late by under 1% of the clock with 5% area to spare.
+2. **Strengthen the evidence:** repeat each search with different seeds, give random
+   sampling the same budget, and lay out each winner at slightly different clocks.
+3. **Score timing as well as area.** The flow does not report timing after synthesis
+   today; OpenROAD's timing analysis on the synthesized netlist, the optimizer's own
+   delay estimate, or logic depth could provide one, once shown to track the result
+   after layout.
+4. **Let layouts teach the search** by running a few during the search, not only at
+   the end.
+5. **Learn a policy** with reinforcement learning, rewarded by the real sign-off result
+   rather than by gate count.
+6. **Grow the design set**, starting with the two large processor cores held out for
+   layout time.
+
+## Design detail: where the first logic graph comes from
+
+Yosys parses the design and hands its whole combinational network to ABC (And-Inverter
+Graph optimizer), which builds the AIG (And-Inverter Graph) by structural hashing and
+runs the recipe on it. The starting AIG (And-Inverter Graph) depends on how Yosys
+pre-optimized upstream, so the Yosys front-end script is held fixed across recipes, and
+registers are excluded: the recipe reshapes the combinational logic between
+flip-flops. See [docs/default-abc-flow.md](docs/default-abc-flow.md) for the full
+walkthrough.

@@ -31,9 +31,10 @@ directed search reaches a good corner of the recipe space that blind sampling mi
 
 ## The honest finding (aes, uart, ibex)
 
-On the other three, the directed search minimized post-synth area effectively (it
-found recipes ~5% smaller than resyn2), but those recipes **miss timing at route**: on
-aes it traded resyn2's +1.3 ps slack for -3.6 ps. Minimizing area alone overshoots
+On the other three, every recipe the search sent to layout **missed timing at route**.
+On aes and uart its best picks were smaller than resyn2 (about 5% on aes, 4.6% on
+uart), but on ibex they were not smaller at all (0.2% larger). On aes the best pick
+traded resyn2's +1.3 ps slack for -3.6 ps, a near miss of under 1% of the clock. Minimizing area alone overshoots
 into timing violation on timing-tight designs. Post-synth area is a good ranker among
 already-legal recipes (Goal 2), but a poor *objective* to minimize freely, because the
 smallest-area restructurings are often the slowest.
