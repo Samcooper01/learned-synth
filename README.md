@@ -66,39 +66,21 @@ clock: a recipe counts as better only if it meets timing and uses less area than
 
 ## How it works
 
-1. **Running any recipe in the real flow ([harness/patch_orfs.py](harness/patch_orfs.py)).**
-   A small, reversible patch makes the flow take any recipe file. A fixed opening step
-   builds the logic graph, the searched middle is the list of transforms, and a fixed
-   closing sequence maps the logic onto real library cells, so every comparison is like
-   for like.
-2. **The harness ([harness/harness.py](harness/harness.py)).** `run_recipe(design,
-   recipe)` runs the full flow and records area, timing and power. Each recipe runs in
-   its own output folder named from a fingerprint of its steps, and the raw
-   measurements are kept so the definition of a win can change without re-running.
-3. **Choosing the designs ([harness/probe_designs.py](harness/probe_designs.py)).** All
-   12 example designs for this technology synthesize. aes-block fails floorplanning even
-   in the unmodified flow, and the two largest processor cores were held out for layout
-   time, leaving 9 designs from 418 to 58,336 cells
-   ([results/DESIGN_SET.md](results/DESIGN_SET.md)).
-4. **Matched-timing clocks ([harness/calibrate_clocks.py](harness/calibrate_clocks.py)).**
-   At their shipped clocks, 6 of the 9 designs missed timing, which makes raw area
-   unfair to compare. Each design's clock is calibrated by repeated full layouts to the
-   fastest clock at which `resyn2` still just meets timing. A looser clock does not
-   help: the tools stop working as hard and the slack disappears
-   ([results/CLOCKS.md](results/CLOCKS.md)).
-5. **The 234 layouts ([harness/labelsweep.py](harness/labelsweep.py)).** For each
-   design, `resyn2` plus 25 random recipes run through the full flow at the matched
-   clock: about 79 hours of compute in total, from about a minute per layout (uart) to
-   about an hour (ethmac).
-6. **Sharing one machine ([harness/loadmanaged_rerun.py](harness/loadmanaged_rerun.py)).**
-   Each layout needs about 3.6 gigabytes of memory at its peak. The runner starts another
-   layout only when one more fits in free memory above a reserve, staggers launches,
-   never stops a running layout, and skips finished layouts when restarted.
-7. **The cheap score and the directed search
-   ([harness/predict_qor.py](harness/predict_qor.py),
-   [harness/flagship_search.py](harness/flagship_search.py)).** The search runs 12
-   rounds of 20 recipes, scored by synthesis only, and lays out its top 3 once at the
-   end.
+1. **Recipe injection** ([patch_orfs.py](harness/patch_orfs.py)): a reversible patch
+   lets the flow run any recipe file.
+2. **Harness** ([harness.py](harness/harness.py)): `run_recipe(design, recipe)` runs
+   the full flow and records area, timing and power.
+3. **Design set** ([probe_designs.py](harness/probe_designs.py)): 9 designs, from 418
+   to 58,336 cells.
+4. **Iso-timing clocks** ([calibrate_clocks.py](harness/calibrate_clocks.py)): each
+   design's clock is calibrated so `resyn2` just meets timing.
+5. **Sweep** ([labelsweep.py](harness/labelsweep.py)): `resyn2` plus 25 random recipes
+   per design, 234 layouts and about 79 hours of compute.
+6. **Memory-aware runner** ([loadmanaged_rerun.py](harness/loadmanaged_rerun.py)):
+   starts a layout only when it fits in free memory.
+7. **Predictor and search** ([predict_qor.py](harness/predict_qor.py),
+   [flagship_search.py](harness/flagship_search.py)): ranks recipes by post-synthesis
+   area and runs the genetic algorithm.
 
 ## Repository map
 
