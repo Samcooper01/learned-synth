@@ -49,7 +49,7 @@ technology, instead of on the usual gate-count shortcut.
 ## Results
 
 | Design | Size (cells) | Best recipe versus `resyn2` |
-|---|---|---|---|
+|---|---|---|
 | gcd | ~400 | 5.8% less area |
 | jpeg | ~58,000 | 2.2% less area |
 | ethmac | ~56,000 | 2.1% less area |
