@@ -34,9 +34,6 @@ technology, instead of on the usual gate-count shortcut.
    proxy, but post-route QoR (Quality of Results) disagreed with it, a random-search
    baseline outperformed the policy even on the proxy, and a GNN (Graph Neural
    Network)-guided greedy policy stalled where direct measurement did not.
-   Write-ups: [results/RESULTS.md](results/RESULTS.md),
-   [results/GNN_STUDY.md](results/GNN_STUDY.md),
-   [results/PICKER_STUDY.md](results/PICKER_STUDY.md).
 2. **Sign-off-graded design space exploration.** Every candidate recipe runs the full
    RTL (Register Transfer Level)-to-sign-off flow (synthesis, placement, CTS (Clock
    Tree Synthesis), routing) at an iso-timing operating point: a per-design clock
