@@ -28,27 +28,25 @@ technology, instead of on the usual gate-count shortcut.
 ## The project in brief
 
 1. **Machine learning on a proxy metric.** A PPO (Proximal Policy Optimization)
-   reinforcement learning agent and a GNN (Graph Neural Network) surrogate model over
-   the AIG (And-Inverter Graph) were trained against AIG (And-Inverter Graph) node
-   count, the usual proxy metric in recipe-learning work. Both learned to optimize the
-   proxy, but post-route QoR (Quality of Results) disagreed with it, a random-search
-   baseline outperformed the policy even on the proxy, and a GNN (Graph Neural
-   Network)-guided greedy policy stalled where direct measurement did not.
-2. **Sign-off-graded design space exploration.** Every candidate recipe runs the full
-   RTL (Register Transfer Level)-to-sign-off flow (synthesis, placement, CTS (Clock
-   Tree Synthesis), routing) at an iso-timing operating point: a per-design clock
-   constraint calibrated so `resyn2` sits at near-zero slack. Random sampling of 25 recipes
-   per design beats `resyn2` on 5 of 9 designs, with up to 5.8% area reduction.
+   reinforcement learning agent that builds a recipe one transform at a time, rewarded
+   by AIG (And-Inverter Graph) node count; a GNN (Graph Neural Network) surrogate that
+   predicts how much of an AIG (And-Inverter Graph) `resyn2` would remove; and a greedy
+   policy that picks each transform by the GNN (Graph Neural Network)'s prediction.
+   The learned recipes were then checked against post-route QoR (Quality of Results).
+2. **Sign-off-graded design space exploration.** A harness that runs any recipe
+   through the full RTL (Register Transfer Level)-to-sign-off flow (synthesis,
+   placement, CTS (Clock Tree Synthesis), routing) at an iso-timing operating point: a
+   per-design clock constraint calibrated so `resyn2` sits at near-zero slack. 25
+   random recipes plus `resyn2` per design, 234 full layouts in total.
 3. **A low-cost QoR (Quality of Results) predictor for search pruning.**
-   Post-synthesis cell area, available in seconds, predicts post-route area with a
-   Spearman rank correlation of 0.79. Routing only the top 3 of 26 candidates recovers
-   89% of the achievable area gain while skipping 88% of place-and-route runs.
+   Post-synthesis cell area, available in seconds, ranks candidate recipes before place
+   and route, so only the top few are laid out.
 4. **Surrogate-guided evolutionary search.** A genetic algorithm (elitism, tournament
-   selection, crossover, mutation) uses the post-synthesis surrogate as its fitness
-   function, about 180 evaluations per design in 2 to 10 minutes, and verifies the top
-   3 candidates post-route. It achieves timing closure on riscv32i, where `resyn2` has
-   negative slack, with a 0.8% area reduction, and a near miss on aes: 5% area
-   reduction with negative slack under 1% of the clock period.
+   selection, crossover, mutation) that uses the post-synthesis surrogate as its
+   fitness function, about 180 evaluations per design, then verifies its top 3
+   candidates post-route.
+
+## Results
 
 | Design | Size (cells) | Best recipe versus `resyn2` | Found by |
 |---|---|---|---|
