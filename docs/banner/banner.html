@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!-- The project-page banner for the README: a 1600 by 400 strip linking to the walkthrough.
+     render.py fills the {{...}} slots with the fonts and with the two recipes read straight
+     out of results/labelsweep_dataset.jsonl, so the picture cannot drift from the data. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Inter"; font-weight: 100 900; src: url({{INTER}}) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-weight: 100 900; src: url({{SERIF}}) format("woff2"); }
+  :root {
+    --bg: #fffdf8;
+    --surface: #ffffff;
+    --text: #151413;
+    --muted: #55524b;
+    --faint: #b8b0a1;
+    --border: #e7e2d7;
+    --accent: #9c2a20;
+    --balance: #8a8578;
+    --rewrite: #9c2a20;
+    --refactor: #c2703a;
+    --resub: #4f7a4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1600px; height: 400px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    font-family: "Inter", sans-serif;
+    color: var(--text);
+    position: relative;
+  }
+  .rail { position: absolute; left: 0; top: 0; width: 10px; height: 400px; background: var(--accent); }
+
+  .left { position: absolute; left: 72px; top: 52px; width: 856px; }
+  .eyebrow {
+    font-size: 15px; font-weight: 700; letter-spacing: 0.18em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  h1 {
+    margin-top: 14px;
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 48px; font-weight: 600; line-height: 1.09; letter-spacing: -0.01em;
+  }
+  .sub { margin-top: 18px; font-size: 19px; line-height: 1.45; color: var(--muted); }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .cta { position: absolute; left: 72px; bottom: 46px; display: flex; align-items: center; gap: 18px; }
+  .cta .button {
+    background: var(--accent); color: #fff; font-size: 19px; font-weight: 700;
+    padding: 12px 22px; border-radius: 7px;
+  }
+  .cta .url { font-size: 16px; color: var(--faint); }
+
+  .panel {
+    position: absolute; right: 72px; top: 52px; width: 588px; height: 296px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 24px;
+  }
+  .panel .cap {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--faint);
+    text-transform: uppercase;
+  }
+  .row { margin-top: 18px; }
+  .row .head { display: flex; align-items: baseline; justify-content: space-between; }
+  .row .name { font-size: 16px; font-weight: 600; }
+  .row .name span { color: var(--faint); font-weight: 500; }
+  .row .area { font-size: 16px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .row.win .area { color: var(--accent); }
+
+  /* one block per transform, every strip the same width, so the two are comparable */
+  .strip { margin-top: 7px; display: flex; gap: 3px; height: 30px; }
+  .strip i { flex: 1; border-radius: 3px; display: block; }
+  .balance  { background: var(--balance); }
+  .rewrite  { background: var(--rewrite); }
+  .refactor { background: var(--refactor); }
+  .resub    { background: var(--resub); }
+  .z { opacity: 0.42; }
+
+  .delta {
+    margin-top: 20px; display: flex; align-items: center; gap: 10px;
+    font-size: 17px; font-weight: 600;
+  }
+  .delta .pill {
+    background: var(--accent); color: #fff; border-radius: 6px;
+    padding: 5px 11px; font-variant-numeric: tabular-nums;
+  }
+  .delta .note { color: var(--muted); font-weight: 500; }
+
+  .legend {
+    position: absolute; left: 24px; right: 24px; bottom: 18px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 13px; color: var(--muted);
+  }
+  .legend .k { display: flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 11px; height: 11px; border-radius: 2px; display: block; }
+  .legend .tail { margin-left: auto; color: var(--faint); }
+</style>
+</head>
+<body>
+  <div class="rail"></div>
+
+  <div class="left">
+    <div class="eyebrow">learned-synth &middot; project page</div>
+    <h1>Is the standard recipe for open-source logic synthesis good enough?</h1>
+    <p class="sub">A better recipe on <b>6 of 9 designs</b>, with up to <b>5.8% less chip area</b> at the same clock speed.</p>
+  </div>
+
+  <div class="cta">
+    <span class="button">Read the walkthrough &rarr;</span>
+    <span class="url">samcooper01.github.io/learned-synth</span>
+  </div>
+
+  <div class="panel">
+    <div class="cap">gcd &middot; same clock, smaller chip</div>
+
+    <div class="row">
+      <div class="head">
+        <div class="name">resyn2 <span>&middot; the standard recipe, {{RESYN2_N}} steps</span></div>
+        <div class="area">{{RESYN2_AREA}}</div>
+      </div>
+      <div class="strip">{{RESYN2_STRIP}}</div>
+    </div>
+
+    <div class="row win">
+      <div class="head">
+        <div class="name">found <span>&middot; {{BEST_N}} steps</span></div>
+        <div class="area">{{BEST_AREA}}</div>
+      </div>
+      <div class="strip">{{BEST_STRIP}}</div>
+    </div>
+
+    <div class="delta">
+      <span class="pill">{{DELTA}}</span>
+      <span class="note">area, at matched timing</span>
+    </div>
+
+    <div class="legend">
+      <span class="k"><i class="sw balance"></i>balance</span>
+      <span class="k"><i class="sw rewrite"></i>rewrite</span>
+      <span class="k"><i class="sw refactor"></i>refactor</span>
+      <span class="k"><i class="sw resub"></i>resub</span>
+      <span class="tail">faded = the -z variant</span>
+    </div>
+  </div>
+</body>
+</html>
