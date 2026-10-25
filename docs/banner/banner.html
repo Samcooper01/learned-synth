@@ -60,40 +60,29 @@
     font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--faint);
     text-transform: uppercase;
   }
-  .row { margin-top: 18px; }
-  .row .head { display: flex; align-items: baseline; justify-content: space-between; }
-  .row .name { font-size: 16px; font-weight: 600; }
-  .row .name span { color: var(--faint); font-weight: 500; }
-  .row .area { font-size: 16px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .row.win .area { color: var(--accent); }
-
-  /* one block per transform, every strip the same width, so the two are comparable */
-  .strip { margin-top: 7px; display: flex; gap: 3px; height: 30px; }
-  .strip i { flex: 1; border-radius: 3px; display: block; }
-  .balance  { background: var(--balance); }
-  .rewrite  { background: var(--rewrite); }
-  .refactor { background: var(--refactor); }
-  .resub    { background: var(--resub); }
-  .z { opacity: 0.42; }
-
-  .delta {
-    margin-top: 20px; display: flex; align-items: center; gap: 10px;
-    font-size: 17px; font-weight: 600;
+  .chart { margin-top: 12px; }
+  /* one row per design, bar length proportional to the area saved against resyn2 */
+  .bar { display: flex; align-items: center; height: 22px; }
+  .bar .name {
+    width: 74px; font-size: 13px; font-weight: 600; color: var(--text);
+    font-variant-numeric: tabular-nums;
   }
-  .delta .pill {
-    background: var(--accent); color: #fff; border-radius: 6px;
-    padding: 5px 11px; font-variant-numeric: tabular-nums;
+  .bar .track { flex: 1; height: 12px; position: relative; }
+  .bar .fill { position: absolute; left: 0; top: 0; height: 12px; border-radius: 2px; background: var(--accent); }
+  .bar .val {
+    width: 56px; text-align: right; font-size: 12px; font-weight: 600;
+    color: var(--accent); font-variant-numeric: tabular-nums;
   }
-  .delta .note { color: var(--muted); font-weight: 500; }
-
-  .legend {
-    position: absolute; left: 24px; right: 24px; bottom: 18px;
-    display: flex; align-items: center; gap: 16px;
-    font-size: 13px; color: var(--muted);
+  .bar.none .name { color: var(--muted); font-weight: 500; }
+  .bar.none .val { color: var(--faint); font-weight: 500; }
+  .bar.none .track::before {
+    content: ""; position: absolute; left: 0; top: 5px; width: 14px; height: 2px;
+    background: var(--border);
   }
-  .legend .k { display: flex; align-items: center; gap: 6px; }
-  .legend .sw { width: 11px; height: 11px; border-radius: 2px; display: block; }
-  .legend .tail { margin-left: auto; color: var(--faint); }
+  .foot {
+    position: absolute; left: 24px; right: 24px; bottom: 16px;
+    font-size: 12px; color: var(--faint);
+  }
 </style>
 </head>
 <body>
@@ -111,36 +100,8 @@
   </div>
 
   <div class="panel">
-    <div class="cap">gcd &middot; same clock, smaller chip</div>
-
-    <div class="row">
-      <div class="head">
-        <div class="name">resyn2 <span>&middot; the standard recipe, {{RESYN2_N}} steps</span></div>
-        <div class="area">{{RESYN2_AREA}}</div>
-      </div>
-      <div class="strip">{{RESYN2_STRIP}}</div>
-    </div>
-
-    <div class="row win">
-      <div class="head">
-        <div class="name">found <span>&middot; {{BEST_N}} steps</span></div>
-        <div class="area">{{BEST_AREA}}</div>
-      </div>
-      <div class="strip">{{BEST_STRIP}}</div>
-    </div>
-
-    <div class="delta">
-      <span class="pill">{{DELTA}}</span>
-      <span class="note">area, at matched timing</span>
-    </div>
-
-    <div class="legend">
-      <span class="k"><i class="sw balance"></i>balance</span>
-      <span class="k"><i class="sw rewrite"></i>rewrite</span>
-      <span class="k"><i class="sw refactor"></i>refactor</span>
-      <span class="k"><i class="sw resub"></i>resub</span>
-      <span class="tail">faded = the -z variant</span>
-    </div>
-  </div>
+    <div class="cap">best recipe found vs resyn2, per design</div>
+    <div class="chart">{{CHART}}</div>
+    <div class="foot">area at matched timing, measured on the finished ASAP7 layout</div>
 </body>
 </html>

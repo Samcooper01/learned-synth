@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Render the project-page banner to docs/banner.png, 1600 by 400.
 
-The two recipe strips are read out of results/labelsweep_dataset.jsonl rather than
-written into the page, so the banner always shows the recipes the sweep actually
-found. Fonts are inlined as data URIs, because a page opened from a file cannot
+The bar chart is the headline per-design result, drawn in the banner's own palette so
+its numbers cannot disagree with the headline beside it. Fonts are inlined as data URIs, because a page opened from a file cannot
 load them by path. Needs a headless Chromium: pass its path as the first argument,
 or set CHROME.
 """
 import base64
-import json
 import os
 import subprocess
 import sys
@@ -17,38 +15,41 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DOCS = HERE.parent
-SWEEP = DOCS.parent / "results" / "labelsweep_dataset.jsonl"
-DESIGN = "gcd"
-
-# each ABC transform gets a colour; the -z variants share their parent's colour, faded
-FAMILIES = ("balance", "rewrite", "refactor", "resub")
+# The headline table, as the repository README publishes it: for each design, the best
+# recipe found by any search that still meets the design's clock, against resyn2 on the
+# finished layout. gcd through mock-cpu come from the random sweep (results/HEADLINE.md);
+# riscv32i's win is the directed search's alone (results/FLAGSHIP.md), which is why the
+# two write-ups count 5 wins and 6 wins respectively.
+RESULTS = [
+    ("gcd", 5.77),
+    ("jpeg", 2.19),
+    ("ethmac", 2.09),
+    ("riscv32i", 0.81),
+    ("mock-alu", 0.70),
+    ("mock-cpu", 0.22),
+    ("aes", None),
+    ("uart", None),
+    ("ibex", None),
+]
 
 
 def data_uri(path, mime):
     return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode()
 
 
-def strip(steps):
-    """One block per transform, coloured by family and faded for the -z variants."""
-    out = []
-    for step in steps:
-        family = step.split()[0]
-        if family not in FAMILIES:
-            raise SystemExit(f"unknown transform in recipe: {step}")
-        faded = " z" if step.endswith("-z") else ""
-        out.append(f'<i class="{family}{faded}"></i>')
-    return "".join(out)
-
-
-def recipes():
-    """resyn2 and the smallest recipe that still meets the design's timing."""
-    rows = [json.loads(line) for line in SWEEP.read_text().splitlines() if line.strip()]
-    kept = [r for r in rows if r["design"] == DESIGN and r["ok"] and r["meets_timing"]]
-    if not kept:
-        raise SystemExit(f"no clean {DESIGN} runs in {SWEEP}")
-    base = next(r for r in kept if r["is_resyn2"])
-    best = min(kept, key=lambda r: r["area"])
-    return base, best
+def chart():
+    """One row per design; the bar is the area saved, scaled to the largest win."""
+    top = max(v for _, v in RESULTS if v is not None)
+    rows = []
+    for name, saved in RESULTS:
+        if saved is None:
+            rows.append(f'<div class="bar none"><span class="name">{name}</span>'
+                        f'<span class="track"></span><span class="val">none</span></div>')
+        else:
+            rows.append(f'<div class="bar"><span class="name">{name}</span>'
+                        f'<span class="track"><i class="fill" style="width:{saved / top * 100:.1f}%"></i></span>'
+                        f'<span class="val">\u2212{saved:.1f}%</span></div>')
+    return "".join(rows)
 
 
 def main():
@@ -56,18 +57,10 @@ def main():
     if not chrome:
         sys.exit("usage: render.py <path to headless chromium>  (or set CHROME)")
 
-    base, best = recipes()
-    delta = (best["area"] - base["area"]) / base["area"] * 100
     slots = {
         "INTER": data_uri(HERE / "fonts/inter-var-latin.woff2", "font/woff2"),
         "SERIF": data_uri(HERE / "fonts/source-serif-4-var-latin.woff2", "font/woff2"),
-        "RESYN2_STRIP": strip(base["steps"]),
-        "BEST_STRIP": strip(best["steps"]),
-        "RESYN2_N": str(len(base["steps"])),
-        "BEST_N": str(len(best["steps"])),
-        "RESYN2_AREA": f"{base['area']:.1f} µm²",
-        "BEST_AREA": f"{best['area']:.1f} µm²",
-        "DELTA": f"−{abs(delta):.1f}%",
+        "CHART": chart(),
     }
 
     page = (HERE / "banner.html").read_text()
@@ -82,7 +75,8 @@ def main():
                         "--window-size=1600,400", "--force-device-scale-factor=1",
                         "--virtual-time-budget=3000", f"--screenshot={out}",
                         filled.as_uri()], check=True, capture_output=True)
-    print(f"{out}  ({len(base['steps'])} vs {len(best['steps'])} steps, {delta:+.2f}%)")
+    wins = sum(1 for _, v in RESULTS if v is not None)
+    print(f"{out}  ({wins} of {len(RESULTS)} designs beat resyn2)")
 
 
 if __name__ == "__main__":
